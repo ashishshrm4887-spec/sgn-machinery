@@ -11,6 +11,7 @@ export const ALLOWED_MIME: Record<string, MediaKind> = {
   "image/svg+xml": "image",
   "video/mp4": "video",
   "video/webm": "video",
+  "video/quicktime": "video",
   "application/pdf": "pdf",
 };
 
@@ -24,6 +25,7 @@ const ALLOWED_EXT: Record<string, string> = {
   svg: "image/svg+xml",
   mp4: "video/mp4",
   webm: "video/webm",
+  mov: "video/quicktime",
   pdf: "application/pdf",
 };
 
@@ -34,12 +36,21 @@ export const MAX_BYTES: Record<MediaKind, number> = {
   other: 2 * 1024 * 1024,
 };
 
+/** Practical limit for serverless body size when Vercel Blob is not configured. */
+export const SERVERLESS_SAFE_BYTES = 4 * 1024 * 1024;
+
 const MAGIC: { kind: MediaKind; mime: string; test: (b: Uint8Array) => boolean }[] = [
   { kind: "image", mime: "image/jpeg", test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
   { kind: "image", mime: "image/png", test: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 },
   { kind: "image", mime: "image/gif", test: (b) => b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 },
   { kind: "image", mime: "image/webp", test: (b) => b[0] === 0x52 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 },
-  { kind: "video", mime: "video/mp4", test: (b) => b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70 },
+  // ISO BMFF (MP4 / MOV): "ftyp" at offset 4
+  {
+    kind: "video",
+    mime: "video/mp4",
+    test: (b) =>
+      b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70,
+  },
   { kind: "pdf", mime: "application/pdf", test: (b) => b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46 },
 ];
 
@@ -93,10 +104,12 @@ export function sniffUpload(filename: string, declaredType: string, bytes: Uint8
   const ext = extOf(filename);
   const fromExt = ALLOWED_EXT[ext];
   if (!fromExt) {
-    throw new UploadError("This file type is not allowed. Use an image, MP4/WebM video, or PDF.");
+    throw new UploadError(
+      "This file type is not allowed. Use JPG/PNG/WebP image, MP4/MOV/WebM video, or PDF.",
+    );
   }
   const declared = declaredType.split(";")[0]?.trim().toLowerCase() || fromExt;
-  if (!ALLOWED_MIME[declared] && declared !== fromExt) {
+  if (!ALLOWED_MIME[declared] && declared !== fromExt && declared !== "application/octet-stream") {
     throw new UploadError("This file type is not allowed.");
   }
   if (ext === "svg") {
@@ -108,15 +121,24 @@ export function sniffUpload(filename: string, declaredType: string, bytes: Uint8
   }
   const magic = MAGIC.find((m) => bytes.length >= 12 && m.test(bytes));
   if (magic) {
+    // MOV and MP4 share the same ftyp container — keep extension-based mime for MOV
+    if (ext === "mov" || declared === "video/quicktime") {
+      return { mime: "video/quicktime" as const, kind: "video" as const };
+    }
     if (ALLOWED_MIME[magic.mime] !== ALLOWED_MIME[fromExt] && magic.mime !== fromExt) {
       throw new UploadError("The file contents do not match the file name.");
     }
     return { mime: magic.mime, kind: magic.kind };
   }
-  if (fromExt === "video/webm" || fromExt === "image/avif" || fromExt === "image/webp") {
+  if (
+    fromExt === "video/webm" ||
+    fromExt === "video/quicktime" ||
+    fromExt === "image/avif" ||
+    fromExt === "image/webp"
+  ) {
     return { mime: fromExt, kind: ALLOWED_MIME[fromExt] };
   }
-  throw new UploadError("The file could not be verified. Use a standard image, MP4, WebM, or PDF.");
+  throw new UploadError("The file could not be verified. Use a standard image, MP4, MOV, WebM, or PDF.");
 }
 
 export async function saveMediaFile(opts: {

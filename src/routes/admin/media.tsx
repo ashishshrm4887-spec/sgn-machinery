@@ -17,6 +17,7 @@ function MediaAdmin() {
   const initial = Route.useLoaderData();
   const [items, setItems] = useState(initial);
   const [q, setQ] = useState("");
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
   async function search(value: string) {
@@ -29,24 +30,39 @@ function MediaAdmin() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-4xl uppercase">Media library</h1>
-          <p className="text-steel">Files are stored in the database (or object storage when configured), not in GitHub.</p>
+          <p className="text-steel">
+            Files are stored in the database (or object storage when configured), not in GitHub.
+          </p>
+          <p className="mt-1 text-xs text-steel">
+            Videos: MP4 / MOV / WebM, max about 4 MB. Compress long clips before upload.
+          </p>
         </div>
-        <label className="cursor-pointer bg-accent px-4 py-2 font-display text-sm uppercase tracking-wide text-fg">
-          Upload
+        <label
+          className={`cursor-pointer bg-accent px-4 py-2 font-display text-sm uppercase tracking-wide text-fg ${
+            uploading ? "opacity-60 pointer-events-none" : ""
+          }`}
+        >
+          {uploading ? "Uploading…" : "Upload"}
           <input
             type="file"
             className="hidden"
-            accept="image/*,video/mp4,video/webm,application/pdf"
+            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mov,.mp4,.webm,application/pdf"
             multiple
+            disabled={uploading}
             onChange={async (e) => {
-              for (const file of Array.from(e.target.files ?? [])) {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = "";
+              if (!files.length) return;
+              setUploading(true);
+              for (const file of files) {
                 try {
                   await uploadFile(file);
-                  toast.success("File uploaded successfully.");
+                  toast.success(`${file.name} uploaded.`);
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "Upload failed. Please try again.");
                 }
               }
+              setUploading(false);
               await router.invalidate();
               setItems(await listMediaAdmin({ data: q }));
             }}
@@ -77,7 +93,11 @@ function MediaAdmin() {
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
                     {item.kind === "image" ? (
-                      <img src={item.publicUrl || `/api/media/${item.id}`} alt="" className="h-10 w-12 object-cover" />
+                      <img
+                        src={item.publicUrl || `/api/media/${item.id}`}
+                        alt=""
+                        className="h-10 w-12 object-cover"
+                      />
                     ) : null}
                     <input
                       defaultValue={item.originalName}
@@ -104,7 +124,12 @@ function MediaAdmin() {
                     className="text-accent underline"
                     onClick={async () => {
                       const used = item.usage.length > 0;
-                      if (used && !confirm("This file is in use. Delete it anyway? Pages that reference it will fall back to a placeholder.")) {
+                      if (
+                        used &&
+                        !confirm(
+                          "This file is in use. Delete it anyway? Pages that reference it will fall back to a placeholder.",
+                        )
+                      ) {
                         return;
                       }
                       if (!used && !confirm("Delete this file?")) return;
