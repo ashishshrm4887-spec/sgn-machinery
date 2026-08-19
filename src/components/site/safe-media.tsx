@@ -3,6 +3,14 @@ import { cn } from "@/lib/utils";
 
 const PLACEHOLDER = "/media/placeholder.svg";
 
+function mediaTypeFromUrl(src: string): string | undefined {
+  const path = src.split("?")[0]?.toLowerCase() ?? "";
+  if (path.endsWith(".mp4") || path.includes("/api/media/")) return "video/mp4";
+  if (path.endsWith(".webm")) return "video/webm";
+  if (path.endsWith(".mov")) return "video/quicktime";
+  return undefined;
+}
+
 export function SafeImage({
   src,
   alt,
@@ -55,6 +63,15 @@ export function SafeVideo({
   caption?: string | null;
 }) {
   const [failed, setFailed] = useState(false);
+
+  if (!src) {
+    return (
+      <div className={cn("relative bg-navy-mid", className)}>
+        <SafeImage src={poster} alt={caption || "Video unavailable"} className="h-full w-full" />
+      </div>
+    );
+  }
+
   if (failed) {
     return (
       <div className={cn("relative bg-navy-mid", className)}>
@@ -65,17 +82,26 @@ export function SafeVideo({
       </div>
     );
   }
+
+  const type = mediaTypeFromUrl(src);
+
   return (
     <div className={cn("relative bg-navy", className)}>
       <video
+        key={src}
         controls
-        preload="none"
-        poster={poster || PLACEHOLDER}
-        className="h-full w-full bg-navy"
+        playsInline
+        preload="metadata"
+        poster={poster || undefined}
+        className="h-full w-full bg-navy object-contain"
         onError={() => setFailed(true)}
       >
-        <source src={src} />
+        <source src={src} type={type} />
+        {type !== "video/mp4" ? <source src={src} type="video/mp4" /> : null}
       </video>
+      {caption ? (
+        <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p>
+      ) : null}
     </div>
   );
 }
