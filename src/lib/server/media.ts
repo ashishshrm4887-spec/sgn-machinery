@@ -15,6 +15,14 @@ export const ALLOWED_MIME: Record<string, MediaKind> = {
   "application/pdf": "pdf",
 };
 
+/** MIME types allowed for unauthenticated enquiry attachments. No SVG/video. */
+export const PUBLIC_ENQUIRY_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
+
 const ALLOWED_EXT: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -36,22 +44,36 @@ export const MAX_BYTES: Record<MediaKind, number> = {
   other: 2 * 1024 * 1024,
 };
 
+/** Hard ceiling for public (enquiry) uploads — keeps serverless bodies safe. */
+export const PUBLIC_ENQUIRY_MAX_BYTES = 2 * 1024 * 1024;
+
 /** Practical limit for serverless body size when Vercel Blob is not configured. */
 export const SERVERLESS_SAFE_BYTES = 4 * 1024 * 1024;
 
 const MAGIC: { kind: MediaKind; mime: string; test: (b: Uint8Array) => boolean }[] = [
   { kind: "image", mime: "image/jpeg", test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  { kind: "image", mime: "image/png", test: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 },
+  {
+    kind: "image",
+    mime: "image/png",
+    test: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+  },
   { kind: "image", mime: "image/gif", test: (b) => b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 },
-  { kind: "image", mime: "image/webp", test: (b) => b[0] === 0x52 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 },
-  // ISO BMFF (MP4 / MOV): "ftyp" at offset 4
+  {
+    kind: "image",
+    mime: "image/webp",
+    test: (b) => b[0] === 0x52 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42,
+  },
   {
     kind: "video",
     mime: "video/mp4",
     test: (b) =>
       b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70,
   },
-  { kind: "pdf", mime: "application/pdf", test: (b) => b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46 },
+  {
+    kind: "pdf",
+    mime: "application/pdf",
+    test: (b) => b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46,
+  },
 ];
 
 export class UploadError extends Error {
@@ -63,6 +85,23 @@ export class UploadError extends Error {
 
 export function mediaPublicPath(id: string): string {
   return `/api/media/${id}`;
+}
+
+/** Strip path separators and control chars; keep a safe basename. */
+export function sanitizeFilename(name: string): string {
+  const base = name.replace(/\\/g, "/").split("/").pop() ?? "file";
+  let cleaned = "";
+  for (const ch of base) {
+    const code = ch.charCodeAt(0);
+    if (code < 32 || code === 127) continue;
+    if ('<>:"|?*'.includes(ch)) {
+      cleaned += "_";
+    } else {
+      cleaned += ch;
+    }
+  }
+  cleaned = cleaned.trim().slice(0, 180);
+  return cleaned || "file";
 }
 
 export function rowToMedia(row: Record<string, unknown>): MediaRecord {
@@ -82,11 +121,13 @@ export function rowToMedia(row: Record<string, unknown>): MediaRecord {
   };
 }
 
-export function resolveMediaUrl(row: {
-  storage?: string | null;
-  public_url?: string | null;
-  id?: string | null;
-} | null | undefined): string | null {
+export function resolveMediaUrl(
+  row: {
+    storage?: string | null;
+    public_url?: string | null;
+    id?: string | null;
+  } | null | undefined,
+): string | null {
   if (!row) return null;
   if (row.storage === "public" && row.public_url) return row.public_url;
   if (row.storage === "blob" && row.public_url) return row.public_url;
@@ -100,7 +141,12 @@ function extOf(name: string): string {
   return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
 }
 
-export function sniffUpload(filename: string, declaredType: string, bytes: Uint8Array) {
+export function sniffUpload(
+  filename: string,
+  declaredType: string,
+  bytes: Uint8Array,
+  opts?: { publicEnquiry?: boolean },
+) {
   const ext = extOf(filename);
   const fromExt = ALLOWED_EXT[ext];
   if (!fromExt) {
@@ -108,20 +154,40 @@ export function sniffUpload(filename: string, declaredType: string, bytes: Uint8
       "This file type is not allowed. Use JPG/PNG/WebP image, MP4/MOV/WebM video, or PDF.",
     );
   }
+
+  if (opts?.publicEnquiry) {
+    if (ext === "svg" || fromExt === "image/svg+xml") {
+      throw new UploadError("SVG files are not allowed on the enquiry form.");
+    }
+    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(fromExt)) {
+      throw new UploadError(
+        "Enquiry attachments must be JPG, PNG, WebP, or PDF (max 2 MB).",
+      );
+    }
+  }
+
   const declared = declaredType.split(";")[0]?.trim().toLowerCase() || fromExt;
   if (!ALLOWED_MIME[declared] && declared !== fromExt && declared !== "application/octet-stream") {
     throw new UploadError("This file type is not allowed.");
   }
+
   if (ext === "svg") {
-    const text = new TextDecoder().decode(bytes.slice(0, 400));
-    if (/<script/i.test(text) || /on\w+=/i.test(text)) {
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    if (
+      /<script[\s>]/i.test(text) ||
+      /\bon\w+\s*=/i.test(text) ||
+      /javascript\s*:/i.test(text) ||
+      /<foreignObject/i.test(text) ||
+      /xlink:href\s*=\s*["']\s*https?:/i.test(text) ||
+      /href\s*=\s*["']\s*https?:/i.test(text)
+    ) {
       throw new UploadError("This SVG is not allowed.");
     }
     return { mime: "image/svg+xml" as const, kind: "image" as const };
   }
+
   const magic = MAGIC.find((m) => bytes.length >= 12 && m.test(bytes));
   if (magic) {
-    // MOV and MP4 share the same ftyp container — keep extension-based mime for MOV
     if (ext === "mov" || declared === "video/quicktime") {
       return { mime: "video/quicktime" as const, kind: "video" as const };
     }
@@ -138,7 +204,9 @@ export function sniffUpload(filename: string, declaredType: string, bytes: Uint8
   ) {
     return { mime: fromExt, kind: ALLOWED_MIME[fromExt] };
   }
-  throw new UploadError("The file could not be verified. Use a standard image, MP4, MOV, WebM, or PDF.");
+  throw new UploadError(
+    "The file could not be verified. Use a standard image, MP4, MOV, WebM, or PDF.",
+  );
 }
 
 export async function saveMediaFile(opts: {
@@ -148,13 +216,27 @@ export async function saveMediaFile(opts: {
   altText?: string;
   caption?: string;
   createdBy?: string | null;
+  publicEnquiry?: boolean;
 }): Promise<MediaRecord> {
-  const sniffed = sniffUpload(opts.filename, opts.mimeType, opts.bytes);
-  const max = MAX_BYTES[sniffed.kind];
-  if (opts.bytes.length > max) {
-    throw new UploadError(
-      `That ${sniffed.kind} is too large. Maximum size is ${Math.round(max / (1024 * 1024))} MB.`,
-    );
+  const safeName = sanitizeFilename(opts.filename);
+  const sniffed = sniffUpload(safeName, opts.mimeType, opts.bytes, {
+    publicEnquiry: opts.publicEnquiry,
+  });
+
+  if (opts.publicEnquiry) {
+    if (!PUBLIC_ENQUIRY_MIME.has(sniffed.mime)) {
+      throw new UploadError("Enquiry attachments must be JPG, PNG, WebP, or PDF (max 2 MB).");
+    }
+    if (opts.bytes.length > PUBLIC_ENQUIRY_MAX_BYTES) {
+      throw new UploadError("Enquiry attachment is too large. Maximum size is 2 MB.");
+    }
+  } else {
+    const max = MAX_BYTES[sniffed.kind];
+    if (opts.bytes.length > max) {
+      throw new UploadError(
+        `That ${sniffed.kind} is too large. Maximum size is ${Math.round(max / (1024 * 1024))} MB.`,
+      );
+    }
   }
 
   const id = newId();
@@ -168,8 +250,8 @@ export async function saveMediaFile(opts: {
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
     [
       id,
-      opts.filename,
-      opts.filename,
+      safeName,
+      safeName,
       sniffed.mime,
       sniffed.kind,
       opts.bytes.length,
@@ -180,12 +262,18 @@ export async function saveMediaFile(opts: {
       opts.createdBy ?? null,
     ],
   );
-
-  if (storage === "db") {
+  try {
     await sql.query(`insert into media_blobs (media_id, bytes) values ($1, $2)`, [
       id,
       Buffer.from(opts.bytes),
     ]);
+  } catch (err) {
+    try {
+      await sql.query(`delete from media_library where id = $1`, [id]);
+    } catch {
+      /* best-effort cleanup */
+    }
+    throw err;
   }
 
   const rows = await sql.query(`select * from media_library where id = $1`, [id]);
@@ -283,6 +371,7 @@ export async function deleteMedia(id: string, force = false) {
   }
   const sql = await getSql();
   await sql.query(`delete from media_usage where media_id = $1`, [id]);
+  await sql.query(`delete from media_blobs where media_id = $1`, [id]);
   await sql.query(`delete from media_library where id = $1`, [id]);
   return { ok: true as const, usage: [] };
 }
