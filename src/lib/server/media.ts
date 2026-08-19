@@ -15,11 +15,14 @@ export const ALLOWED_MIME: Record<string, MediaKind> = {
   "application/pdf": "pdf",
 };
 
-/** MIME types allowed for unauthenticated enquiry attachments. No SVG/video. */
+/** MIME types allowed for unauthenticated enquiry attachments. No SVG. */
 export const PUBLIC_ENQUIRY_MIME = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
   "application/pdf",
 ]);
 
@@ -44,8 +47,12 @@ export const MAX_BYTES: Record<MediaKind, number> = {
   other: 2 * 1024 * 1024,
 };
 
-/** Hard ceiling for public (enquiry) uploads — keeps serverless bodies safe. */
-export const PUBLIC_ENQUIRY_MAX_BYTES = 2 * 1024 * 1024;
+/**
+ * Public enquiry upload ceiling.
+ * Without Vercel Blob, serverless body limit is ~4.5 MB — 4 MB is the safe max.
+ * Short compressed clips (~1–2 min at low bitrate) can fit; large phone videos must be compressed.
+ */
+export const PUBLIC_ENQUIRY_MAX_BYTES = 4 * 1024 * 1024;
 
 /** Practical limit for serverless body size when Vercel Blob is not configured. */
 export const SERVERLESS_SAFE_BYTES = 4 * 1024 * 1024;
@@ -159,9 +166,19 @@ export function sniffUpload(
     if (ext === "svg" || fromExt === "image/svg+xml") {
       throw new UploadError("SVG files are not allowed on the enquiry form.");
     }
-    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(fromExt)) {
+    if (
+      ![
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+        "application/pdf",
+      ].includes(fromExt)
+    ) {
       throw new UploadError(
-        "Enquiry attachments must be JPG, PNG, WebP, or PDF (max 2 MB).",
+        "Enquiry attachments must be JPG, PNG, WebP, MP4/WebM/MOV video, or PDF (max 4 MB).",
       );
     }
   }
@@ -225,10 +242,14 @@ export async function saveMediaFile(opts: {
 
   if (opts.publicEnquiry) {
     if (!PUBLIC_ENQUIRY_MIME.has(sniffed.mime)) {
-      throw new UploadError("Enquiry attachments must be JPG, PNG, WebP, or PDF (max 2 MB).");
+      throw new UploadError(
+        "Enquiry attachments must be JPG, PNG, WebP, MP4/WebM/MOV video, or PDF (max 4 MB).",
+      );
     }
     if (opts.bytes.length > PUBLIC_ENQUIRY_MAX_BYTES) {
-      throw new UploadError("Enquiry attachment is too large. Maximum size is 2 MB.");
+      throw new UploadError(
+        "File is too large (max 4 MB). For a ~2 minute video, compress it or use a shorter clip.",
+      );
     }
   } else {
     const max = MAX_BYTES[sniffed.kind];
