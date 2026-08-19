@@ -30,7 +30,7 @@ const enquirySchema = z.object({
   location: z.string().trim().max(160).optional().or(z.literal("")),
   requirements: z.string().trim().max(2000).optional().or(z.literal("")),
   message: z.string().trim().max(4000).optional().or(z.literal("")),
-  fileIds: z.array(z.string()).max(6).optional(),
+  fileIds: z.array(z.string().max(64)).max(6).optional(),
   website: z.string().optional(), // honeypot
 });
 
@@ -41,6 +41,26 @@ export const submitEnquiry = createServerFn({ method: "POST" })
     rateLimit(`enquiry:${data.phone}`);
     const id = newId();
     const sql = await getSql();
+
+    const fileIds = data.fileIds ?? [];
+    const validMediaIds: string[] = [];
+    for (const mediaId of fileIds) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(mediaId)) continue;
+      const rows = await sql.query<{ mime_type: string }>(
+        `select mime_type from media_library where id = $1`,
+        [mediaId],
+      );
+      const mime = rows[0]?.mime_type;
+      if (
+        mime === "image/jpeg" ||
+        mime === "image/png" ||
+        mime === "image/webp" ||
+        mime === "application/pdf"
+      ) {
+        validMediaIds.push(mediaId);
+      }
+    }
+
     await sql.query(
       `insert into enquiries
         (id, kind, full_name, company_name, phone, whatsapp, email, machine_name, quantity, location, requirements, message, status)
@@ -60,7 +80,7 @@ export const submitEnquiry = createServerFn({ method: "POST" })
         data.message || null,
       ],
     );
-    for (const mediaId of data.fileIds ?? []) {
+    for (const mediaId of validMediaIds) {
       await sql.query(`insert into enquiry_files (id, enquiry_id, media_id) values ($1,$2,$3)`, [
         newId(),
         id,
