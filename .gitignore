@@ -28,8 +28,13 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Agent sandbox (not part of the product)
+# Agent sandbox and QA (not part of the product)
 .grok/
+screenshots/
+attachments/
+artifacts/
+tmp/
+
 
 # Lock used only in this sandbox
 .node_modules.lock
