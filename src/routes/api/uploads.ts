@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSessionUser } from "@/lib/auth/verify.server";
 import { isAdminUser } from "@/lib/server/admin-guard";
-import {
-  PUBLIC_ENQUIRY_MAX_BYTES,
-  saveMediaFile,
-  UploadError,
-} from "@/lib/server/media";
+import { saveMediaFile, UploadError } from "@/lib/server/media";
+
+/** Public enquiry attachment size limit (must stay aligned with media.ts). */
+const PUBLIC_ENQUIRY_MAX_BYTES = 2 * 1024 * 1024;
 
 /** In-process rate limit for public uploads (best-effort on serverless). */
 const publicBuckets = new Map<string, { n: number; t: number }>();
