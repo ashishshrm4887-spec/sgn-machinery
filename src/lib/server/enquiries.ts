@@ -34,6 +34,16 @@ const enquirySchema = z.object({
   website: z.string().optional(), // honeypot
 });
 
+const ENQUIRY_FILE_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "application/pdf",
+]);
+
 export const submitEnquiry = createServerFn({ method: "POST" })
   .validator((input: unknown) => enquirySchema.parse(input))
   .handler(async ({ data }) => {
@@ -51,12 +61,7 @@ export const submitEnquiry = createServerFn({ method: "POST" })
         [mediaId],
       );
       const mime = rows[0]?.mime_type;
-      if (
-        mime === "image/jpeg" ||
-        mime === "image/png" ||
-        mime === "image/webp" ||
-        mime === "application/pdf"
-      ) {
+      if (mime && ENQUIRY_FILE_MIME.has(mime)) {
         validMediaIds.push(mediaId);
       }
     }

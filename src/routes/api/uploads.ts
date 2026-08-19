@@ -3,8 +3,12 @@ import { getSessionUser } from "@/lib/auth/verify.server";
 import { isAdminUser } from "@/lib/server/admin-guard";
 import { saveMediaFile, UploadError } from "@/lib/server/media";
 
-/** Public enquiry attachment size limit (must stay aligned with media.ts). */
-const PUBLIC_ENQUIRY_MAX_BYTES = 2 * 1024 * 1024;
+/**
+ * Public enquiry attachment size limit.
+ * Vercel serverless request body is ~4.5 MB without Blob storage — stay under that.
+ * Enough for a short, compressed clip; a full 2‑minute phone video usually needs compression.
+ */
+const PUBLIC_ENQUIRY_MAX_BYTES = 4 * 1024 * 1024;
 
 /** In-process rate limit for public uploads (best-effort on serverless). */
 const publicBuckets = new Map<string, { n: number; t: number }>();
@@ -54,7 +58,7 @@ export const Route = createFileRoute("/api/uploads")({
           return Response.json({ error: "No file received." }, { status: 400 });
         }
 
-        // Public path: enquiry attachments only — no admin, tight limits, rate-limited.
+        // Public path: enquiry attachments — images, short video, PDF; rate-limited.
         // Admin path: require authenticated administrator.
         if (isPublic) {
           try {
@@ -65,7 +69,10 @@ export const Route = createFileRoute("/api/uploads")({
           }
           if (file.size > PUBLIC_ENQUIRY_MAX_BYTES) {
             return Response.json(
-              { error: "Enquiry attachment is too large. Maximum size is 2 MB." },
+              {
+                error:
+                  "File is too large (max 4 MB). For a ~2 minute video, compress it or use a shorter clip.",
+              },
               { status: 400 },
             );
           }

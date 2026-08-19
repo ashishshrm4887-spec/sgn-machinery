@@ -10,12 +10,13 @@ export type UploadedFile = {
 };
 
 const EXT_OK = /\.(jpe?g|png|webp|avif|gif|svg|mp4|webm|mov|pdf)$/i;
-const EXT_PUBLIC = /\.(jpe?g|png|webp|pdf)$/i;
+/** Enquiry form: images, short video, PDF (no SVG). */
+const EXT_PUBLIC = /\.(jpe?g|png|webp|mp4|webm|mov|pdf)$/i;
 
 /** Soft client limit: Vercel serverless request body is ~4.5 MB without Blob storage. */
 const CLIENT_MAX_BYTES = 4 * 1024 * 1024;
-/** Public enquiry attachments stay smaller. */
-const CLIENT_PUBLIC_MAX_BYTES = 2 * 1024 * 1024;
+/** Public enquiry: same serverless ceiling so short compressed videos can upload. */
+const CLIENT_PUBLIC_MAX_BYTES = 4 * 1024 * 1024;
 
 export async function uploadFile(
   file: File,
@@ -23,10 +24,14 @@ export async function uploadFile(
 ): Promise<UploadedFile> {
   if (opts?.publicEnquiry) {
     if (!EXT_PUBLIC.test(file.name)) {
-      throw new Error("Enquiry attachments must be JPG, PNG, WebP, or PDF.");
+      throw new Error(
+        "Enquiry attachments must be JPG, PNG, WebP, MP4/WebM/MOV video, or PDF.",
+      );
     }
     if (file.size > CLIENT_PUBLIC_MAX_BYTES) {
-      throw new Error("File is too large for enquiry upload (max 2 MB).");
+      throw new Error(
+        "File is too large (max 4 MB). For a ~2 minute video, compress it or use a shorter clip.",
+      );
     }
   } else {
     if (!EXT_OK.test(file.name)) {
@@ -61,7 +66,7 @@ export async function uploadFile(
   } catch {
     throw new Error(
       res.status === 413
-        ? "File is too large for the server. Use a smaller file."
+        ? "File is too large for the server. Use a smaller or compressed video."
         : "Upload failed. Please try a smaller file.",
     );
   }
