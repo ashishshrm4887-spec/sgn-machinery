@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <rect width="1600" height="1000" fill="#0E1C33"/>
+  <rect x="0" y="0" width="16" height="1000" fill="#C8102E"/>
+  <path d="M80 860H1520" stroke="#F3EFE6" stroke-opacity="0.12"/>
+  <path d="M180 280h1240v480H180z" stroke="#F3EFE6" stroke-opacity="0.18"/>
+  <path d="M260 680h200v80H260zM520 600h280v160H520zM860 640h200v120H860zM1120 560h180v200h-180z" fill="#162A48"/>
+  <path d="M260 680h200v80H260zM520 600h280v160H520zM860 640h200v120H860zM1120 560h180v200h-180z" stroke="#F3EFE6" stroke-opacity="0.2"/>
+  <text x="800" y="230" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-size="42" font-weight="700" fill="#F3EFE6" letter-spacing="8">SGN</text>
+  <text x="800" y="920" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-size="22" font-weight="600" fill="#9AA3B0" letter-spacing="4">MACHINERY PHOTOGRAPH PENDING</text>
+</svg>

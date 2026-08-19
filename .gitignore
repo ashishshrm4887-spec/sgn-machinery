@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build / deploy
+dist/
+.vercel/
+.output/
+.nitro/
+.tanstack/
+node_modules/.nitro/
+
+# Env and secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Logs and local data
+*.log
+npm-debug.log*
+.pglite/
+pglite.data
+*.local
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Agent sandbox (not part of the product)
+.grok/
+
+# Lock used only in this sandbox
+.node_modules.lock
