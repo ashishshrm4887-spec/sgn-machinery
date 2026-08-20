@@ -21,7 +21,6 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
 
-  // Existing logo asset only — never redesign
   const logoSrc =
     company.logoUrl && company.logoUrl !== "/logo-on-dark.svg"
       ? company.logoUrl
@@ -32,14 +31,11 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b",
-        // Mobile / tablet: pure white, compact
+        "sticky top-0 z-40 border-b box-border",
         "border-black/10 bg-[#FFFFFF] text-[#07111F]",
-        // Desktop: original navy header
         "lg:border-line lg:bg-navy lg:text-fg",
       )}
     >
-      {/* Desktop-only top utility bar */}
       <div className="hidden border-b border-line bg-navy-mid/50 lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 text-xs tracking-wide text-fg-muted">
           <p className="truncate">{company.businessLine}</p>
@@ -59,23 +55,34 @@ export function Header() {
       </div>
 
       {/*
-        Mobile bar: compact ~110–125px total.
-        Same horizontal row; all items vertically centered.
-        Logo width unchanged from previous (do not enlarge further).
+        Mobile: fixed ~120px bar, logo ~240px wide, one centered row.
+        Desktop (lg+): original flexible navy bar.
       */}
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-3 sm:gap-3 sm:px-6 sm:py-3.5 lg:px-4 lg:py-3">
+      <div
+        className={cn(
+          "mx-auto flex max-w-6xl box-border items-center",
+          // Mobile / tablet dimensions
+          "h-[120px] min-h-[120px] max-h-[120px] gap-2.5 pl-6 pr-5",
+          // Desktop resets height lock
+          "lg:h-auto lg:min-h-0 lg:max-h-none lg:gap-4 lg:px-4 lg:py-3",
+        )}
+      >
         <Link
           to="/"
           className="flex min-w-0 flex-1 items-center"
           onClick={() => setOpen(false)}
         >
-          {/* Mobile / tablet — same width as before; max-height keeps bar compact */}
           <img
             src={logoSrc}
             alt={company.companyName}
-            className="block h-auto max-h-[4.75rem] w-[min(15.5rem,calc(100vw-8.5rem))] object-contain object-left leading-none sm:max-h-[5rem] sm:w-[min(18rem,calc(100vw-9rem))] md:max-h-[5.25rem] md:w-[min(20rem,calc(100vw-10rem))] lg:hidden"
+            className={cn(
+              "block object-contain object-left",
+              // ~240px wide logo; height auto, capped to fit 120px bar
+              "h-auto w-[240px] max-w-[calc(100vw-12.5rem)] max-h-[88px]",
+              "sm:w-[250px] sm:max-h-[90px]",
+              "lg:hidden",
+            )}
           />
-          {/* Desktop logo (unchanged) */}
           <img
             src={desktopLogoSrc}
             alt={company.companyName}
@@ -98,7 +105,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3.5">
           {phone ? (
             <a
               href={toTelLink(phone)}
@@ -117,8 +124,8 @@ export function Header() {
             search={{}}
             className={cn(
               buttonVariants({ size: "sm" }),
-              "border border-[#C8102E] bg-[#FFFFFF] text-[#C8102E] hover:bg-[#C8102E]/5",
-              "lg:border-transparent lg:bg-accent lg:text-fg lg:hover:bg-accent-hover",
+              "min-w-[7rem] border border-[#C8102E] bg-[#FFFFFF] text-[#C8102E] hover:bg-[#C8102E]/5",
+              "lg:min-w-0 lg:border-transparent lg:bg-accent lg:text-fg lg:hover:bg-accent-hover",
             )}
           >
             Quote
@@ -126,7 +133,7 @@ export function Header() {
 
           <button
             type="button"
-            className="grid size-10 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
+            className="grid size-[2.75rem] shrink-0 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
