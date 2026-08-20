@@ -20,24 +20,37 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
-  // Prefer company logo; fall back to full horizontal lockup (light background)
-  const logo = company.logoUrl && company.logoUrl !== "/logo-on-dark.svg"
-    ? company.logoUrl
-    : "/logo.svg";
+
+  // Existing logo asset only — never redesign
+  const logoSrc =
+    company.logoUrl && company.logoUrl !== "/logo-on-dark.svg"
+      ? company.logoUrl
+      : "/logo.svg";
+  const desktopLogoSrc =
+    logoSrc === "/logo.svg" ? "/logo-on-dark.svg" : logoSrc;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper text-ink shadow-sm">
-      <div className="hidden border-b border-ink/8 bg-paper-2 md:block">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 text-xs tracking-wide text-steel">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b",
+        // Mobile / tablet: pure white
+        "border-black/10 bg-[#FFFFFF] text-[#07111F]",
+        // Desktop: original navy header
+        "lg:border-line lg:bg-navy lg:text-fg",
+      )}
+    >
+      {/* Desktop-only top utility bar (unchanged behaviour) */}
+      <div className="hidden border-b border-line bg-navy-mid/50 lg:block">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 text-xs tracking-wide text-fg-muted">
           <p className="truncate">{company.businessLine}</p>
           <div className="flex items-center gap-4">
             {phone ? (
-              <a href={toTelLink(phone)} className="hover:text-ink">
+              <a href={toTelLink(phone)} className="hover:text-fg">
                 {formatPhoneDisplay(phone)}
               </a>
             ) : null}
             {company.email ? (
-              <a href={`mailto:${company.email}`} className="hover:text-ink">
+              <a href={`mailto:${company.email}`} className="hover:text-fg">
                 {company.email}
               </a>
             ) : null}
@@ -45,27 +58,36 @@ export function Header() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 lg:py-3">
+        {/* LOGO — left, grows; does not overlap Quote/Menu */}
         <Link
           to="/"
-          className="flex min-w-0 flex-1 items-center"
+          className="flex min-w-0 flex-1 items-center self-stretch"
           onClick={() => setOpen(false)}
         >
+          {/* Mobile / tablet logo */}
           <img
-            src={logo}
+            src={logoSrc}
             alt={company.companyName}
-            className="h-12 w-auto max-w-[calc(100vw-7.5rem)] object-contain object-left sm:h-14 sm:max-w-[min(100%,22rem)] md:h-16 md:max-w-[28rem] lg:h-[4.5rem] lg:max-w-[32rem]"
+            className="block h-[3.75rem] w-auto max-w-[calc(100vw-8.25rem)] object-contain object-left sm:h-[4.25rem] sm:max-w-[calc(100vw-9rem)] md:h-20 lg:hidden"
+          />
+          {/* Desktop logo */}
+          <img
+            src={desktopLogoSrc}
+            alt={company.companyName}
+            className="hidden h-11 w-auto max-w-[220px] object-contain lg:block"
           />
         </Link>
 
+        {/* Desktop nav */}
         <nav className="ml-auto hidden items-center gap-5 lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "font-display text-[0.92rem] font-semibold uppercase tracking-[0.14em] text-steel transition-colors hover:text-ink",
-                pathname.startsWith(item.to) && "text-ink",
+                "font-display text-[0.92rem] font-semibold uppercase tracking-[0.14em] text-fg-muted transition-colors hover:text-fg",
+                pathname.startsWith(item.to) && "text-fg",
               )}
             >
               {item.label}
@@ -78,27 +100,34 @@ export function Header() {
             <a
               href={toTelLink(phone)}
               className={cn(
-                buttonVariants({ variant: "outlineInk", size: "sm" }),
-                "hidden sm:inline-flex",
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "hidden lg:inline-flex",
               )}
             >
               <Phone className="size-4" />
               Call
             </a>
           ) : null}
+
+          {/* QUOTE — mobile: white + red border/text; desktop: primary */}
           <Link
             to="/quote"
             search={{}}
             className={cn(
-              buttonVariants({ variant: "outlineInk", size: "sm" }),
-              "border-accent text-accent hover:border-accent hover:bg-accent/5",
+              buttonVariants({ size: "sm" }),
+              // Mobile / tablet
+              "border border-[#C8102E] bg-[#FFFFFF] text-[#C8102E] hover:bg-[#C8102E]/5",
+              // Desktop
+              "lg:border-transparent lg:bg-accent lg:text-fg lg:hover:bg-accent-hover",
             )}
           >
             Quote
           </Link>
+
+          {/* HAMBURGER — white + dark border/icon (mobile only) */}
           <button
             type="button"
-            className="grid size-11 place-items-center border border-ink/20 text-ink lg:hidden"
+            className="grid size-11 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
@@ -108,14 +137,14 @@ export function Header() {
       </div>
 
       {open ? (
-        <div className="border-t border-ink/10 bg-paper px-4 py-4 lg:hidden">
+        <div className="border-t border-black/10 bg-[#FFFFFF] px-4 py-4 lg:hidden">
           <nav className="flex flex-col">
             {NAV.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="border-b border-ink/10 py-3 font-display text-lg uppercase tracking-[0.12em] text-ink"
+                className="border-b border-black/10 py-3 font-display text-lg uppercase tracking-[0.12em] text-[#07111F]"
               >
                 {item.label}
               </Link>
