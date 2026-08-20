@@ -69,7 +69,7 @@ function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-navy px-4 text-fg">
       <div className="w-full max-w-md border border-line bg-navy-mid p-8">
-        <img src="/logo-on-dark.svg" alt="SGN" className="h-10 w-auto" />
+        <img src="/logo-on-dark.svg" alt="SGN" className="h-14 w-auto" />
         <h1 className="mt-6 font-display text-3xl uppercase">
           {mode === "setup" ? "Create administrator" : "Administrator sign in"}
         </h1>

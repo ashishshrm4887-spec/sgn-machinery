@@ -15,13 +15,14 @@ export const Route = createFileRoute("/admin/company")({
 
 function CompanyAdminPage() {
   const initial = Route.useLoaderData();
-  if (!initial) return <p>Loading company…</p>;
-  const [data, setData] = useState<CompanyPublic>(initial);
-  const [phones, setPhones] = useState(initial.phones.join("\n"));
+  const [data, setData] = useState<CompanyPublic | null>(initial);
+  const [phones, setPhones] = useState(() => (initial ? initial.phones.join("\n") : ""));
   const [busy, setBusy] = useState(false);
 
+  if (!data) return <p>Loading company…</p>;
+
   function patch<K extends keyof CompanyPublic>(key: K, value: CompanyPublic[K]) {
-    setData((d) => ({ ...d, [key]: value }));
+    setData((d) => (d ? { ...d, [key]: value } : d));
   }
 
   async function onLogo(file: File | undefined, field: "logoUrl" | "faviconUrl") {

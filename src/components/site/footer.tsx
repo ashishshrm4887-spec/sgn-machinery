@@ -11,7 +11,7 @@ export function Footer() {
           <img
             src={company.logoUrl === "/logo.svg" ? "/logo-on-dark.svg" : company.logoUrl}
             alt={company.companyName}
-            className="mb-4 h-12 w-auto"
+            className="mb-4 h-16 w-auto max-w-[280px] object-contain sm:h-20"
           />
           <p className="kicker">{company.businessLine}</p>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-fg-muted">

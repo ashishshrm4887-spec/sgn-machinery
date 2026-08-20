@@ -52,9 +52,11 @@ function HomePage() {
               muted
               loop
               playsInline
+              preload="auto"
               poster={company.heroImageUrl || "/media/hero-workshop.jpg"}
             >
-              <source src={company.heroVideoUrl} />
+              <source src={company.heroVideoUrl} type="video/mp4" />
+              <source src={company.heroVideoUrl} type="video/webm" />
             </video>
           ) : (
             <img
