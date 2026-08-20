@@ -55,15 +55,16 @@ export function Header() {
       </div>
 
       {/*
-        Mobile: fixed ~120px bar, logo ~240px wide, one centered row.
-        Desktop (lg+): original flexible navy bar.
+        Mobile target (reference):
+        - 120px white bar
+        - logo ~300px wide (existing asset)
+        - Quote + Menu on same centered row
+        - shrink actions before shrinking logo
       */}
       <div
         className={cn(
           "mx-auto flex max-w-6xl box-border items-center",
-          // Mobile / tablet dimensions
-          "h-[120px] min-h-[120px] max-h-[120px] gap-2.5 pl-6 pr-5",
-          // Desktop resets height lock
+          "h-[120px] min-h-[120px] max-h-[120px] gap-2 px-6",
           "lg:h-auto lg:min-h-0 lg:max-h-none lg:gap-4 lg:px-4 lg:py-3",
         )}
       >
@@ -76,10 +77,10 @@ export function Header() {
             src={logoSrc}
             alt={company.companyName}
             className={cn(
-              "block object-contain object-left",
-              // ~240px wide logo; height auto, capped to fit 120px bar
-              "h-auto w-[240px] max-w-[calc(100vw-12.5rem)] max-h-[88px]",
-              "sm:w-[250px] sm:max-h-[90px]",
+              "block h-auto object-contain object-left",
+              // ~300px preferred; falls back on very narrow screens
+              "w-[min(300px,calc(100vw-9.25rem))] max-h-[100px]",
+              "max-[390px]:w-[min(250px,calc(100vw-8.5rem))]",
               "lg:hidden",
             )}
           />
@@ -105,7 +106,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-3.5">
+        <div className="flex shrink-0 items-center gap-2 max-[390px]:gap-1.5 sm:gap-3">
           {phone ? (
             <a
               href={toTelLink(phone)}
@@ -123,9 +124,11 @@ export function Header() {
             to="/quote"
             search={{}}
             className={cn(
-              buttonVariants({ size: "sm" }),
-              "min-w-[7rem] border border-[#C8102E] bg-[#FFFFFF] text-[#C8102E] hover:bg-[#C8102E]/5",
-              "lg:min-w-0 lg:border-transparent lg:bg-accent lg:text-fg lg:hover:bg-accent-hover",
+              "inline-flex h-10 items-center justify-center border border-[#C8102E] bg-[#FFFFFF] px-3",
+              "font-display text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#C8102E]",
+              "hover:bg-[#C8102E]/5",
+              // Desktop: original primary look
+              "lg:h-10 lg:border-transparent lg:bg-accent lg:px-4 lg:text-[0.95rem] lg:text-fg lg:hover:bg-accent-hover",
             )}
           >
             Quote
@@ -133,7 +136,7 @@ export function Header() {
 
           <button
             type="button"
-            className="grid size-[2.75rem] shrink-0 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
+            className="grid size-10 shrink-0 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
