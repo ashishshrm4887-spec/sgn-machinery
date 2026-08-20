@@ -33,13 +33,13 @@ export function Header() {
     <header
       className={cn(
         "sticky top-0 z-40 border-b",
-        // Mobile / tablet: pure white
+        // Mobile / tablet: pure white, compact
         "border-black/10 bg-[#FFFFFF] text-[#07111F]",
         // Desktop: original navy header
         "lg:border-line lg:bg-navy lg:text-fg",
       )}
     >
-      {/* Desktop-only top utility bar (unchanged behaviour) */}
+      {/* Desktop-only top utility bar */}
       <div className="hidden border-b border-line bg-navy-mid/50 lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 text-xs tracking-wide text-fg-muted">
           <p className="truncate">{company.businessLine}</p>
@@ -58,18 +58,22 @@ export function Header() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 lg:py-3">
-        {/* LOGO — flex:1 left area; img sized ~2× previous mobile size */}
+      {/*
+        Mobile bar: compact ~110–125px total.
+        Same horizontal row; all items vertically centered.
+        Logo width unchanged from previous (do not enlarge further).
+      */}
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-3 sm:gap-3 sm:px-6 sm:py-3.5 lg:px-4 lg:py-3">
         <Link
           to="/"
           className="flex min-w-0 flex-1 items-center"
           onClick={() => setOpen(false)}
         >
-          {/* Mobile / tablet: width-driven so the actual logo graphic scales up */}
+          {/* Mobile / tablet — same width as before; max-height keeps bar compact */}
           <img
             src={logoSrc}
             alt={company.companyName}
-            className="block h-auto w-[min(15.5rem,calc(100vw-8.5rem))] object-contain object-left sm:w-[min(18rem,calc(100vw-9rem))] md:w-[min(20rem,calc(100vw-10rem))] lg:hidden"
+            className="block h-auto max-h-[4.75rem] w-[min(15.5rem,calc(100vw-8.5rem))] object-contain object-left leading-none sm:max-h-[5rem] sm:w-[min(18rem,calc(100vw-9rem))] md:max-h-[5.25rem] md:w-[min(20rem,calc(100vw-10rem))] lg:hidden"
           />
           {/* Desktop logo (unchanged) */}
           <img
@@ -79,7 +83,6 @@ export function Header() {
           />
         </Link>
 
-        {/* Desktop nav */}
         <nav className="ml-auto hidden items-center gap-5 lg:flex">
           {NAV.map((item) => (
             <Link
@@ -95,7 +98,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-3">
           {phone ? (
             <a
               href={toTelLink(phone)}
@@ -109,25 +112,21 @@ export function Header() {
             </a>
           ) : null}
 
-          {/* QUOTE — mobile: white + red border/text; desktop: primary */}
           <Link
             to="/quote"
             search={{}}
             className={cn(
               buttonVariants({ size: "sm" }),
-              // Mobile / tablet
               "border border-[#C8102E] bg-[#FFFFFF] text-[#C8102E] hover:bg-[#C8102E]/5",
-              // Desktop
               "lg:border-transparent lg:bg-accent lg:text-fg lg:hover:bg-accent-hover",
             )}
           >
             Quote
           </Link>
 
-          {/* HAMBURGER — white + dark border/icon (mobile only) */}
           <button
             type="button"
-            className="grid size-11 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
+            className="grid size-10 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
