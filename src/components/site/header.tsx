@@ -15,14 +15,15 @@ const NAV = [
   { to: "/contact" as const, label: "Contact" },
 ];
 
+/** Transparent SGN logo for the white mobile header (no white box). */
+const MOBILE_LOGO = "/sgn-logo-300x100.svg";
+
 export function Header() {
   const company = useCompany();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
 
-  // Transparent SGN lockup for white mobile header (no white box)
-  const logoSrc = "/sgn-logo-300x100.png";
   const desktopLogoSrc =
     company.logoUrl && company.logoUrl !== "/logo.svg"
       ? company.logoUrl === "/logo-on-dark.svg"
@@ -69,7 +70,7 @@ export function Header() {
           onClick={() => setOpen(false)}
         >
           <img
-            src={logoSrc}
+            src={MOBILE_LOGO}
             alt={company.companyName}
             className={cn(
               "block h-auto object-contain object-left",
