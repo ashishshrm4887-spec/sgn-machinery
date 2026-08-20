@@ -24,13 +24,8 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
 
-  // Prefer company logo (e.g. transparent PNG uploaded in Admin); else built-in transparent asset
-  const logoSrc =
-    company.logoUrl &&
-    company.logoUrl !== "/logo.svg" &&
-    company.logoUrl !== "/logo-on-dark.svg"
-      ? company.logoUrl
-      : MOBILE_LOGO;
+  // Always use transparent asset on mobile white header (avoids old white-rectangle JPG)
+  const logoSrc = MOBILE_LOGO;
 
   const desktopLogoSrc =
     company.logoUrl && company.logoUrl !== "/logo.svg"
