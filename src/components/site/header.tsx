@@ -21,12 +21,14 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
 
-  const logoSrc =
-    company.logoUrl && company.logoUrl !== "/logo-on-dark.svg"
-      ? company.logoUrl
-      : "/logo.svg";
+  // Transparent SGN lockup for white mobile header (no white box)
+  const logoSrc = "/sgn-logo-300x100.png";
   const desktopLogoSrc =
-    logoSrc === "/logo.svg" ? "/logo-on-dark.svg" : logoSrc;
+    company.logoUrl && company.logoUrl !== "/logo.svg"
+      ? company.logoUrl === "/logo-on-dark.svg"
+        ? "/logo-on-dark.svg"
+        : company.logoUrl
+      : "/logo-on-dark.svg";
 
   return (
     <header
@@ -54,13 +56,6 @@ export function Header() {
         </div>
       </div>
 
-      {/*
-        Mobile target (reference):
-        - 120px white bar
-        - logo ~300px wide (existing asset)
-        - Quote + Menu on same centered row
-        - shrink actions before shrinking logo
-      */}
       <div
         className={cn(
           "mx-auto flex max-w-6xl box-border items-center",
@@ -78,7 +73,6 @@ export function Header() {
             alt={company.companyName}
             className={cn(
               "block h-auto object-contain object-left",
-              // ~300px preferred; falls back on very narrow screens
               "w-[min(300px,calc(100vw-9.25rem))] max-h-[100px]",
               "max-[390px]:w-[min(250px,calc(100vw-8.5rem))]",
               "lg:hidden",
@@ -127,7 +121,6 @@ export function Header() {
               "inline-flex h-10 items-center justify-center border border-[#C8102E] bg-[#FFFFFF] px-3",
               "font-display text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#C8102E]",
               "hover:bg-[#C8102E]/5",
-              // Desktop: original primary look
               "lg:h-10 lg:border-transparent lg:bg-accent lg:px-4 lg:text-[0.95rem] lg:text-fg lg:hover:bg-accent-hover",
             )}
           >
