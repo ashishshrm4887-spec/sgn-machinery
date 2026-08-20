@@ -24,6 +24,14 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const phone = company.phones[0] ?? "";
 
+  // Prefer company logo (e.g. transparent PNG uploaded in Admin); else built-in transparent asset
+  const logoSrc =
+    company.logoUrl &&
+    company.logoUrl !== "/logo.svg" &&
+    company.logoUrl !== "/logo-on-dark.svg"
+      ? company.logoUrl
+      : MOBILE_LOGO;
+
   const desktopLogoSrc =
     company.logoUrl && company.logoUrl !== "/logo.svg"
       ? company.logoUrl === "/logo-on-dark.svg"
@@ -70,7 +78,7 @@ export function Header() {
           onClick={() => setOpen(false)}
         >
           <img
-            src={MOBILE_LOGO}
+            src={logoSrc}
             alt={company.companyName}
             className={cn(
               "block h-auto object-contain object-left",
