@@ -42,12 +42,16 @@ export function Header() {
           </div>
         </div>
       </div>
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3.5 sm:py-4">
-        <Link to="/" className="flex min-w-0 items-center gap-3" onClick={() => setOpen(false)}>
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3.5">
+        <Link
+          to="/"
+          className="flex min-w-0 flex-1 items-center lg:flex-none"
+          onClick={() => setOpen(false)}
+        >
           <img
             src={darkLogo}
             alt={company.companyName}
-            className="h-14 w-auto max-w-[260px] object-contain sm:h-16 sm:max-w-[320px]"
+            className="h-[3.25rem] w-auto max-w-full object-contain object-left sm:h-[4.25rem] sm:max-w-[min(100%,380px)] lg:h-20 lg:max-w-[420px]"
           />
         </Link>
         <nav className="ml-auto hidden items-center gap-5 lg:flex">
@@ -64,7 +68,7 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2 lg:ml-4">
+        <div className="flex shrink-0 items-center gap-2 lg:ml-4">
           {phone ? (
             <a
               href={toTelLink(phone)}
