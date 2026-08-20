@@ -58,20 +58,20 @@ export function Header() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 lg:py-3">
-        {/* LOGO — left, grows; does not overlap Quote/Menu */}
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 lg:py-3">
+        {/* LOGO — flex:1 left area; img sized ~2× previous mobile size */}
         <Link
           to="/"
-          className="flex min-w-0 flex-1 items-center self-stretch"
+          className="flex min-w-0 flex-1 items-center"
           onClick={() => setOpen(false)}
         >
-          {/* Mobile / tablet logo */}
+          {/* Mobile / tablet: width-driven so the actual logo graphic scales up */}
           <img
             src={logoSrc}
             alt={company.companyName}
-            className="block h-[3.75rem] w-auto max-w-[calc(100vw-8.25rem)] object-contain object-left sm:h-[4.25rem] sm:max-w-[calc(100vw-9rem)] md:h-20 lg:hidden"
+            className="block h-auto w-[min(15.5rem,calc(100vw-8.5rem))] object-contain object-left sm:w-[min(18rem,calc(100vw-9rem))] md:w-[min(20rem,calc(100vw-10rem))] lg:hidden"
           />
-          {/* Desktop logo */}
+          {/* Desktop logo (unchanged) */}
           <img
             src={desktopLogoSrc}
             alt={company.companyName}
