@@ -42,9 +42,13 @@ export function Header() {
           </div>
         </div>
       </div>
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3.5 sm:py-4">
         <Link to="/" className="flex min-w-0 items-center gap-3" onClick={() => setOpen(false)}>
-          <img src={darkLogo} alt={company.companyName} className="h-11 w-auto max-w-[220px] object-contain" />
+          <img
+            src={darkLogo}
+            alt={company.companyName}
+            className="h-14 w-auto max-w-[260px] object-contain sm:h-16 sm:max-w-[320px]"
+          />
         </Link>
         <nav className="ml-auto hidden items-center gap-5 lg:flex">
           {NAV.map((item) => (
