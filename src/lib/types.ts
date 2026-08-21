@@ -7,7 +7,7 @@ export type MediaRecord = {
   mimeType: string;
   kind: MediaKind;
   sizeBytes: number;
-  storage: "db" | "blob" | "public";
+  storage: "db" | "blob" | "public" | "cloudinary";
   publicUrl: string | null;
   altText: string | null;
   caption: string | null;
@@ -43,17 +43,8 @@ export type CompanyPublic = {
   seoDescription: string;
 };
 
-export type WhyChooseItem = {
-  id: string;
-  title: string;
-  body: string;
-};
-
-export type SocialLink = {
-  id: string;
-  label: string;
-  url: string;
-};
+export type WhyChooseItem = { id: string; title: string; body: string };
+export type SocialLink = { id: string; label: string; url: string };
 
 export type SpecRow = {
   id: string;
@@ -88,12 +79,7 @@ export type MachineDetail = MachineCard & {
   features: { id: string; body: string; sortOrder: number }[];
   applications: { id: string; body: string; sortOrder: number }[];
   images: { id: string; url: string; alt: string; caption: string | null }[];
-  videos: {
-    id: string;
-    url: string;
-    posterUrl: string | null;
-    caption: string | null;
-  }[];
+  videos: { id: string; url: string; posterUrl: string | null; caption: string | null }[];
 };
 
 export type ServiceItem = {
@@ -120,7 +106,7 @@ export type ProjectItem = {
   sortOrder: number;
   imageUrl: string | null;
   images: { id: string; url: string; alt: string; caption: string | null }[];
-  videos: { id: string; url: string; posterUrl: string | null; caption: string | null }[];
+  videos: { id: string; url: string; alt?: string; caption: string | null }[];
 };
 
 export type GalleryItem = {
@@ -135,14 +121,7 @@ export type GalleryItem = {
   posterUrl: string | null;
 };
 
-export type EnquiryStatus =
-  | "new"
-  | "contacted"
-  | "in_progress"
-  | "quoted"
-  | "won"
-  | "closed";
-
+export type EnquiryStatus = "new" | "contacted" | "in_progress" | "quoted" | "won" | "closed";
 export type EnquiryKind = "contact" | "quote";
 
 export type EnquiryRecord = {
