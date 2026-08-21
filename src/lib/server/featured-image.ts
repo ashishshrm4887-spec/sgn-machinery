@@ -12,8 +12,8 @@ export const setMachineFeaturedImage = createServerFn({ method: "POST" })
     await requireAdmin(context.userId);
     const sql = await getSql();
 
-    const machine = await sql.query<{ id: string }>(
-      `select id from machines where id = $1 and archived = false`,
+    const machine = await sql.query<{ id: string; name: string }>(
+      `select id, name from machines where id = $1 and archived = false`,
       [data.machineId],
     );
     if (!machine[0]) throw new Error("Machine not found.");
@@ -40,5 +40,18 @@ export const setMachineFeaturedImage = createServerFn({ method: "POST" })
     );
     await recordUsage(data.mediaId, "machine", data.machineId, "main");
 
-    return { ok: true };
+    return { ok: true, machineName: machine[0].name };
+  });
+
+export const listMachineOptionsAdmin = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.userId);
+    const sql = await getSql();
+    return sql.query<{ id: string; name: string; slug: string }>(
+      `select id, name, slug
+         from machines
+        where archived = false
+        order by sort_order, name`,
+    );
   });
