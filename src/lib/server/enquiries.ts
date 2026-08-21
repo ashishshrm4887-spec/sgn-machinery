@@ -57,7 +57,7 @@ export const submitEnquiry = createServerFn({ method: "POST" })
     for (const mediaId of fileIds) {
       if (!/^[a-zA-Z0-9_-]+$/.test(mediaId)) continue;
       const rows = await sql.query<{ mime_type: string }>(
-        `select mime_type from media_library where id = $1`,
+        `select mime_type from media_library where id = $1 and public_enquiry = true`,
         [mediaId],
       );
       const mime = rows[0]?.mime_type;
