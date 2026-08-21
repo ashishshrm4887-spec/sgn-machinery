@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER = "/media/placeholder.svg";
@@ -81,7 +81,61 @@ export function SafeVideo({
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const effectivePoster = poster || VIDEO_POSTER_FALLBACK;
+  const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
+  const effectivePoster = poster || generatedPoster || VIDEO_POSTER_FALLBACK;
+
+  useEffect(() => {
+    if (!src || poster) {
+      setGeneratedPoster(null);
+      return;
+    }
+
+    let cancelled = false;
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = "anonymous";
+
+    const captureFrame = () => {
+      if (cancelled || !video.videoWidth || !video.videoHeight) return;
+
+      const canvas = document.createElement("canvas");
+      const maxWidth = 640;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      try {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        if (dataUrl.length > 100) setGeneratedPoster(dataUrl);
+      } catch {
+        // Cross-origin or unsupported media: keep the normal fallback poster.
+      }
+
+      video.removeAttribute("src");
+      video.load();
+    };
+
+    const onLoadedData = () => captureFrame();
+    const onSeeked = () => captureFrame();
+
+    video.addEventListener("loadeddata", onLoadedData);
+    video.addEventListener("seeked", onSeeked);
+    video.src = withRetryParam(src, 0);
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadeddata", onLoadedData);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [src, poster]);
 
   if (!src) {
     return (
