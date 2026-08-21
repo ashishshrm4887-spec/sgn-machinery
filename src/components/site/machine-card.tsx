@@ -11,6 +11,8 @@ export function MachineCardView({ machine }: { machine: MachineCard }) {
         <SafeImage
           src={machine.imageUrl}
           alt={machine.name}
+          loading="eager"
+          fetchPriority="high"
           className="aspect-[16/10] w-full"
         />
       </Link>
