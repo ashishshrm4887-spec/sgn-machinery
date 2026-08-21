@@ -104,7 +104,6 @@ export function SafeVideo({
     const captureFrame = () => {
       if (cancelled || captured || !video.videoWidth || !video.videoHeight) return;
       captured = true;
-
       const canvas = document.createElement("canvas");
       const maxWidth = 640;
       const scale = Math.min(1, maxWidth / video.videoWidth);
@@ -112,7 +111,6 @@ export function SafeVideo({
       canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
       const context = canvas.getContext("2d");
       if (!context) return;
-
       try {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
@@ -120,7 +118,6 @@ export function SafeVideo({
       } catch {
         // Cross-origin or unsupported media: keep the normal poster.
       }
-
       video.removeAttribute("src");
       video.load();
     };
@@ -196,7 +193,6 @@ export function SafeVideo({
         preload="auto"
         poster={effectivePoster}
         className="h-full w-full bg-navy object-contain"
-        onPlay={() => setPlaying(true)}
         onError={() => {
           if (attempt < MAX_RETRIES) {
             window.setTimeout(() => setAttempt((value) => value + 1), 700 * (attempt + 1));
@@ -207,11 +203,9 @@ export function SafeVideo({
         onClick={(event) => {
           if (preview) return;
           const video = event.currentTarget;
-          if (!playing) {
-            video.muted = false;
-            setPlaying(true);
-            void video.play().catch(() => undefined);
-          }
+          video.muted = false;
+          setPlaying(true);
+          void video.play().catch(() => undefined);
         }}
       >
         <source src={url} type={type} />
