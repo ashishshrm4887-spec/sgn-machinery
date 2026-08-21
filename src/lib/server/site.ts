@@ -112,14 +112,16 @@ async function highlightSpec(machineId: string): Promise<SpecRow | null> {
 
 async function mainImageUrl(machineId: string): Promise<string | null> {
   const sql = await getSql();
+  // Featured machine cards must use only the explicitly assigned `main` image.
+  // Never select an arbitrary gallery image as the card image.
   const rows = await sql.query<{ storage: string; public_url: string | null; id: string }>(
     `select l.id, l.storage, l.public_url
        from machine_media mm
        join media_library l on l.id = mm.media_id
       where mm.machine_id = $1
-        and mm.role in ('main','gallery')
+        and mm.role = 'main'
         and l.kind = 'image'
-      order by case when mm.role = 'main' then 0 else 1 end, mm.sort_order
+      order by mm.sort_order asc
       limit 1`,
     [machineId],
   );
