@@ -41,6 +41,12 @@ export function SafeImage({
   const [attempt, setAttempt] = useState(0);
   const url = !src || failed ? fallback : withRetryParam(src, attempt);
 
+  useEffect(() => {
+    setFailed(false);
+    setLoaded(false);
+    setAttempt(0);
+  }, [src, fallback]);
+
   return (
     <div className={cn("relative overflow-hidden bg-navy-mid", className)}>
       {!loaded && <div className="absolute inset-0 animate-pulse bg-navy-lift/80" aria-hidden />}
@@ -58,7 +64,14 @@ export function SafeImage({
         )}
         onLoad={() => setLoaded(true)}
         onError={() => {
+          // For machine cards, never leave a blank blue placeholder when the
+          // database/API media URL is unavailable. Switch to the known-good
+          // local fallback immediately; retries are only useful before fallback.
           if (src && !failed && attempt < MAX_RETRIES) {
+            if (attempt === 0) {
+              setFailed(true);
+              return;
+            }
             window.setTimeout(() => setAttempt((value) => value + 1), 500 * (attempt + 1));
             return;
           }
