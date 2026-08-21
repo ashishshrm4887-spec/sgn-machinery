@@ -37,7 +37,7 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b box-border",
+        "z-40 border-b box-border",
         "border-black/10 bg-[#FFFFFF] text-[#07111F]",
         "lg:border-line lg:bg-navy lg:text-fg",
       )}
