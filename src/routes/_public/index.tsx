@@ -3,7 +3,7 @@ import { ArrowRight, Phone } from "lucide-react";
 import { getHomeData } from "@/lib/server/site";
 import { useCompany } from "@/lib/site-context";
 import { MachineCardView } from "@/components/site/machine-card";
-import { SafeImage } from "@/components/site/safe-media";
+import { SafeImage, SafeVideo } from "@/components/site/safe-media";
 import { buttonVariants } from "@/components/ui/button";
 import { cn, toTelLink, toWhatsAppLink } from "@/lib/utils";
 
@@ -216,11 +216,19 @@ function HomePage() {
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {data.gallery.map((item) => (
                 <Link key={item.id} to="/gallery" className="group block overflow-hidden bg-navy-mid">
-                  <SafeImage
-                    src={item.url}
-                    alt={item.caption || "Workshop photograph"}
-                    className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
+                  {item.kind === "video" ? (
+                    <SafeVideo
+                      src={item.url}
+                      poster={item.posterUrl}
+                      className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <SafeImage
+                      src={item.url}
+                      alt={item.caption || "Workshop photograph"}
+                      className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  )}
                   {item.caption ? (
                     <p className="px-3 py-2 text-xs text-fg-muted">{item.caption}</p>
                   ) : null}
