@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { bootstrapAdmin, getAdminSession, getSetupState } from "@/lib/server/admin";
+import { bootstrapAdmin, getSetupState } from "@/lib/server/admin";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/field";
 
@@ -21,20 +21,9 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (isPending || !user) return;
-    void (async () => {
-      try {
-        const session = await getAdminSession();
-        if (!session.hasAdmins) {
-          await bootstrapAdmin();
-          navigate({ to: "/admin" });
-          return;
-        }
-        if (session.isAdmin) navigate({ to: "/admin" });
-      } catch {
-        /* stay on login */
-      }
-    })();
+    if (!isPending && user) {
+      navigate({ to: "/admin" });
+    }
   }, [user, isPending, navigate]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
