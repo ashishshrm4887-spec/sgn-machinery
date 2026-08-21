@@ -116,7 +116,9 @@ async function mainImageUrl(machineId: string): Promise<string | null> {
     `select l.id, l.storage, l.public_url
        from machine_media mm
        join media_library l on l.id = mm.media_id
-      where mm.machine_id = $1 and mm.role in ('main','gallery')
+      where mm.machine_id = $1
+        and mm.role in ('main','gallery')
+        and l.kind = 'image'
       order by case when mm.role = 'main' then 0 else 1 end, mm.sort_order
       limit 1`,
     [machineId],
