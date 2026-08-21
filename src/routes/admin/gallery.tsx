@@ -1,17 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { deleteGalleryItem, listGalleryAdmin, saveGalleryItem, tryAdmin } from "@/lib/server/admin";
+import { listMachineOptionsAdmin, setMachineFeaturedImage } from "@/lib/server/featured-image";
 import { useRouter } from "@tanstack/react-router";
 import { uploadFile } from "@/lib/upload-client";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/admin/gallery")({
-  loader: () => tryAdmin(() => listGalleryAdmin(), []),
+  loader: async () => {
+    const [gallery, machines] = await Promise.all([
+      tryAdmin(() => listGalleryAdmin(), []),
+      tryAdmin(() => listMachineOptionsAdmin(), []),
+    ]);
+    return { gallery, machines };
+  },
   component: GalleryAdmin,
 });
 
 function GalleryAdmin() {
-  const rows = Route.useLoaderData() as {
+  const loaderData = Route.useLoaderData();
+  const rows = loaderData.gallery as {
     id: string;
     media_id: string;
     caption: string | null;
@@ -22,6 +30,7 @@ function GalleryAdmin() {
     public_url: string | null;
     original_name: string;
   }[];
+  const machines = loaderData.machines as { id: string; name: string; slug: string }[];
   const router = useRouter();
 
   async function uploadGalleryFiles(files: FileList | null, isVideo: boolean) {
@@ -43,6 +52,33 @@ function GalleryAdmin() {
       }
     }
     await router.invalidate();
+  }
+
+  async function uploadFeaturedImage(file: File | undefined, machineId: string) {
+    if (!file || !machineId) return;
+    try {
+      const up = await uploadFile(file);
+      if (up.kind !== "image") throw new Error("Please select an image file.");
+
+      // Keep the uploaded image in the normal gallery as well, so it remains
+      // manageable from the Gallery page and can be reused later.
+      await saveGalleryItem({
+        data: {
+          mediaId: up.id,
+          caption: "",
+          category: "Featured machine image",
+          published: true,
+          sortOrder: 0,
+        },
+      });
+      const result = await setMachineFeaturedImage({
+        data: { machineId, mediaId: up.id },
+      });
+      toast.success(`${result.machineName} featured image updated.`);
+      await router.invalidate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not set featured image.");
+    }
   }
 
   const images = rows.filter((r) => r.kind !== "video");
@@ -123,13 +159,13 @@ function GalleryAdmin() {
     <div>
       <div>
         <h1 className="font-display text-4xl uppercase">Gallery</h1>
-        <p className="text-steel">Keep workshop images and machine videos completely separate.</p>
+        <p className="text-steel">Manage workshop images, machine videos, and featured machine images separately.</p>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
         <label className="cursor-pointer border border-ink/15 bg-paper p-5">
           <span className="block font-display text-lg uppercase">Add Images</span>
-          <span className="mt-1 block text-sm text-steel">Select photos only.</span>
+          <span className="mt-1 block text-sm text-steel">Select workshop and machinery photos.</span>
           <span className="mt-4 inline-block bg-accent px-4 py-2 font-display text-sm uppercase tracking-wide text-fg">
             Select Images
           </span>
@@ -138,13 +174,13 @@ function GalleryAdmin() {
             accept="image/*"
             className="hidden"
             multiple
-            onChange={(e) => uploadGalleryFiles(e.target.files, false)}
+            onChange={(e) => void uploadGalleryFiles(e.target.files, false)}
           />
         </label>
 
         <label className="cursor-pointer border border-ink/15 bg-paper p-5">
           <span className="block font-display text-lg uppercase">Add Videos</span>
-          <span className="mt-1 block text-sm text-steel">Select videos only.</span>
+          <span className="mt-1 block text-sm text-steel">Select machine/workshop videos only.</span>
           <span className="mt-4 inline-block bg-accent px-4 py-2 font-display text-sm uppercase tracking-wide text-fg">
             Select Videos
           </span>
@@ -153,9 +189,39 @@ function GalleryAdmin() {
             accept="video/mp4,video/webm,video/quicktime"
             className="hidden"
             multiple
-            onChange={(e) => uploadGalleryFiles(e.target.files, true)}
+            onChange={(e) => void uploadGalleryFiles(e.target.files, true)}
           />
         </label>
+
+        <div className="border border-accent/40 bg-paper p-5">
+          <span className="block font-display text-lg uppercase">Featured Machine Image</span>
+          <span className="mt-1 block text-sm text-steel">
+            Upload the main photo that appears on a featured machine card.
+          </span>
+          <select
+            id="featured-machine"
+            className="mt-4 h-10 w-full border border-ink/15 bg-paper px-2 text-sm"
+            defaultValue=""
+          >
+            <option value="" disabled>Select machine</option>
+            {machines.map((machine) => (
+              <option key={machine.id} value={machine.id}>{machine.name}</option>
+            ))}
+          </select>
+          <label className="mt-3 inline-block cursor-pointer bg-accent px-4 py-2 font-display text-sm uppercase tracking-wide text-fg">
+            Upload Featured Image
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const machineId = (document.getElementById("featured-machine") as HTMLSelectElement | null)?.value ?? "";
+                void uploadFeaturedImage(e.target.files?.[0], machineId);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       <section className="mt-8">
