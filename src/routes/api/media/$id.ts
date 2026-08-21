@@ -9,7 +9,6 @@ function parseRange(rangeHeader: string | null, size: number): { start: number; 
   let start = startStr === "" ? NaN : Number(startStr);
   let end = endStr === "" || endStr === undefined ? size - 1 : Number(endStr);
   if (Number.isNaN(start)) {
-    // suffix range: bytes=-500
     const suffix = Number(endStr);
     if (Number.isNaN(suffix) || suffix <= 0) return null;
     start = Math.max(0, size - suffix);
@@ -26,23 +25,17 @@ export const Route = createFileRoute("/api/media/$id")({
     handlers: {
       GET: async ({ params, request }) => {
         const id = params.id;
-        if (!id || id.length > 64 || /[^a-zA-Z0-9_-]/.test(id)) {
-          return new Response("Not found", { status: 404 });
-        }
+        if (!id || id.length > 64 || /[^a-zA-Z0-9_-]/.test(id)) return new Response("Not found", { status: 404 });
         const meta = await getMediaById(id);
-        if (!meta) {
-          return new Response("Not found", { status: 404 });
-        }
-        if (meta.storage === "blob" && meta.publicUrl) {
+        if (!meta) return new Response("Not found", { status: 404 });
+
+        // External media must never be proxied through the Vercel function.
+        if ((meta.storage === "cloudinary" || meta.storage === "blob" || meta.storage === "public") && meta.publicUrl) {
           return Response.redirect(meta.publicUrl, 302);
         }
-        if (meta.storage === "public" && meta.publicUrl) {
-          return Response.redirect(meta.publicUrl, 302);
-        }
+
         const blob = await getMediaBytes(id);
-        if (!blob || !blob.bytes.length) {
-          return new Response("Not found", { status: 404 });
-        }
+        if (!blob || !blob.bytes.length) return new Response("Not found", { status: 404 });
 
         const bytes = blob.bytes;
         const size = bytes.byteLength;
@@ -50,7 +43,6 @@ export const Route = createFileRoute("/api/media/$id")({
         const contentType = blob.mime || "application/octet-stream";
         const range = parseRange(request.headers.get("range"), size);
 
-        // Full response
         if (!range) {
           return new Response(Buffer.from(bytes), {
             status: 200,
@@ -65,7 +57,6 @@ export const Route = createFileRoute("/api/media/$id")({
           });
         }
 
-        // Partial content — required for reliable HTML5 video/audio seeking
         const { start, end } = range;
         const chunk = bytes.slice(start, end + 1);
         return new Response(Buffer.from(chunk), {
