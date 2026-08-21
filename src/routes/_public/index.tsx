@@ -39,6 +39,7 @@ function HomePage() {
     email: company.email,
     telephone: company.phones.map((p) => (p.length === 10 ? `+91${p}` : p)),
   };
+  let galleryVideoIndex = 0;
 
   return (
     <>
@@ -214,26 +215,28 @@ function HomePage() {
               </Link>
             </div>
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {data.gallery.map((item) => (
-                <Link key={item.id} to="/gallery" className="group block overflow-hidden bg-navy-mid">
-                  {item.kind === "video" ? (
-                    <SafeVideo
-                      src={item.url}
-                      poster={item.posterUrl}
-                      className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <SafeImage
-                      src={item.url}
-                      alt={item.caption || "Workshop photograph"}
-                      className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                  )}
-                  {item.caption ? (
-                    <p className="px-3 py-2 text-xs text-fg-muted">{item.caption}</p>
-                  ) : null}
-                </Link>
-              ))}
+              {data.gallery.map((item) => {
+                const currentVideoIndex = item.kind === "video" ? galleryVideoIndex++ : 0;
+                return (
+                  <Link key={item.id} to="/gallery" className="group block overflow-hidden bg-navy-mid">
+                    {item.kind === "video" ? (
+                      <SafeVideo
+                        src={item.url}
+                        poster={item.posterUrl}
+                        frameIndex={currentVideoIndex}
+                        className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <SafeImage
+                        src={item.url}
+                        alt={item.caption || "Workshop photograph"}
+                        className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    )}
+                    {item.caption ? <p className="px-3 py-2 text-xs text-fg-muted">{item.caption}</p> : null}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
