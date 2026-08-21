@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSessionUser } from "@/lib/auth/verify.server";
 import { isAdminUser } from "@/lib/server/admin-guard";
+import { getSql } from "@/lib/db";
 import { saveMediaFile, UploadError } from "@/lib/server/media";
 
 /**
@@ -94,6 +95,17 @@ export const Route = createFileRoute("/api/uploads")({
             createdBy: user?.id ?? null,
             publicEnquiry: isPublic,
           });
+
+          // Mark unauthenticated uploads explicitly so an enquiry can only attach
+          // files created through the public enquiry-upload path, never arbitrary
+          // administrator media or seed media.
+          if (isPublic) {
+            const sql = await getSql();
+            await sql.query(`update media_library set public_enquiry = true where id = $1`, [
+              saved.id,
+            ]);
+          }
+
           return Response.json({
             id: saved.id,
             url: saved.publicUrl,
