@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER = "/media/placeholder.svg";
-const VIDEO_POSTER_FALLBACK = "/media/hero-workshop.jpg";
+const VIDEO_POSTER_FALLBACK = PLACEHOLDER;
 const MAX_RETRIES = 3;
 
 function withRetryParam(src: string, attempt: number): string {
@@ -49,20 +49,6 @@ export function SafeImage({
 
   return (
     <div className={cn("relative overflow-hidden bg-navy-mid", className)}>
-      {/* Always render the known-good fallback underneath. This prevents a
-          blank/blue card on slow or broken mobile networks while the CMS/API
-          image is loading. The real image fades over it once loaded. */}
-      <img
-        src={fallback}
-        alt=""
-        aria-hidden="true"
-        loading="eager"
-        decoding="async"
-        className={cn(
-          "absolute inset-0 h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/20",
-          imgClassName,
-        )}
-      />
       <img
         key={url}
         src={url}
@@ -110,82 +96,14 @@ export function SafeVideo({
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const shouldGenerateFrame = !poster || frameIndex > 0;
-  const effectivePoster = generatedPoster || poster || VIDEO_POSTER_FALLBACK;
+  const effectivePoster = poster || VIDEO_POSTER_FALLBACK;
 
   useEffect(() => {
-    if (!src || !shouldGenerateFrame) {
-      setGeneratedPoster(null);
-      return;
-    }
-
-    let cancelled = false;
-    let captured = false;
-    const video = document.createElement("video");
-    video.preload = "auto";
-    video.muted = true;
-    video.playsInline = true;
-    video.crossOrigin = "anonymous";
-
-    const captureFrame = () => {
-      if (cancelled || captured || !video.videoWidth || !video.videoHeight) return;
-      captured = true;
-      const canvas = document.createElement("canvas");
-      const maxWidth = 640;
-      const scale = Math.min(1, maxWidth / video.videoWidth);
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      try {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-        if (dataUrl.length > 100) setGeneratedPoster(dataUrl);
-      } catch {
-        // Cross-origin or unsupported media: keep the normal poster.
-      }
-      video.removeAttribute("src");
-      video.load();
-    };
-
-    const onLoadedMetadata = () => {
-      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-      const ratios = [0.2, 0.5, 0.8];
-      const ratio = ratios[Math.abs(frameIndex) % ratios.length];
-      const target = Math.max(0, Math.min(video.duration - 0.05, video.duration * ratio));
-      try {
-        video.currentTime = target;
-      } catch {
-        // Some browsers may require loadeddata before seeking.
-      }
-    };
-
-    const onLoadedData = () => {
-      if (video.currentTime > 0.01) captureFrame();
-    };
-    const onSeeked = () => captureFrame();
-
-    video.addEventListener("loadedmetadata", onLoadedMetadata);
-    video.addEventListener("loadeddata", onLoadedData);
-    video.addEventListener("seeked", onSeeked);
-    video.src = withRetryParam(src, 0);
-
-    return () => {
-      cancelled = true;
-      video.removeEventListener("loadedmetadata", onLoadedMetadata);
-      video.removeEventListener("loadeddata", onLoadedData);
-      video.removeEventListener("seeked", onSeeked);
-      video.removeAttribute("src");
-      video.load();
-    };
-  }, [src, shouldGenerateFrame, frameIndex]);
-
-  useEffect(() => {
-    if (preview) return;
+    setFailed(false);
+    setAttempt(0);
     setPlaying(false);
-  }, [src, preview]);
+  }, [src, poster, frameIndex, preview]);
 
   if (!src) {
     return (
@@ -214,11 +132,9 @@ export function SafeVideo({
       <video
         key={url}
         controls={preview ? false : playing}
-        muted={preview ? true : !playing}
-        autoPlay
-        loop
+        muted={!playing}
         playsInline
-        preload="auto"
+        preload="none"
         poster={effectivePoster}
         className="h-full w-full bg-navy object-contain"
         onError={() => {
