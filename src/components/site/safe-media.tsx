@@ -2,10 +2,17 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER = "/media/placeholder.svg";
+const MAX_RETRIES = 3;
+
+function withRetryParam(src: string, attempt: number): string {
+  if (attempt === 0) return src;
+  const separator = src.includes("?") ? "&" : "?";
+  return `${src}${separator}media_retry=${attempt}`;
+}
 
 function mediaTypeFromUrl(src: string): string | undefined {
   const path = src.split("?")[0]?.toLowerCase() ?? "";
-  if (path.endsWith(".mp4") || path.includes("/api/media/")) return "video/mp4";
+  if (path.endsWith(".mp4")) return "video/mp4";
   if (path.endsWith(".webm")) return "video/webm";
   if (path.endsWith(".mov")) return "video/quicktime";
   return undefined;
@@ -26,13 +33,16 @@ export function SafeImage({
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const url = !src || failed ? fallback : src;
+  const [attempt, setAttempt] = useState(0);
+  const url = !src || failed ? fallback : withRetryParam(src, attempt);
+
   return (
     <div className={cn("relative overflow-hidden bg-navy-mid", className)}>
       {!loaded && (
         <div className="absolute inset-0 animate-pulse bg-navy-lift/80" aria-hidden />
       )}
       <img
+        key={url}
         src={url}
         alt={alt}
         loading="lazy"
@@ -43,6 +53,12 @@ export function SafeImage({
         )}
         onLoad={() => setLoaded(true)}
         onError={() => {
+          if (src && !failed && attempt < MAX_RETRIES) {
+            window.setTimeout(() => {
+              setAttempt((value) => value + 1);
+            }, 500 * (attempt + 1));
+            return;
+          }
           setFailed(true);
           setLoaded(true);
         }}
@@ -63,6 +79,7 @@ export function SafeVideo({
   caption?: string | null;
 }) {
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   if (!src) {
     return (
@@ -83,21 +100,30 @@ export function SafeVideo({
     );
   }
 
+  const url = withRetryParam(src, attempt);
   const type = mediaTypeFromUrl(src);
 
   return (
     <div className={cn("relative bg-navy", className)}>
       <video
-        key={src}
+        key={url}
         controls
         playsInline
         preload="metadata"
         poster={poster || undefined}
         className="h-full w-full bg-navy object-contain"
-        onError={() => setFailed(true)}
+        onError={() => {
+          if (attempt < MAX_RETRIES) {
+            window.setTimeout(() => {
+              setAttempt((value) => value + 1);
+            }, 700 * (attempt + 1));
+            return;
+          }
+          setFailed(true);
+        }}
       >
-        <source src={src} type={type} />
-        {type !== "video/mp4" ? <source src={src} type="video/mp4" /> : null}
+        <source src={url} type={type} />
+        {type !== "video/mp4" ? <source src={url} type="video/mp4" /> : null}
       </video>
       {caption ? (
         <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p>
