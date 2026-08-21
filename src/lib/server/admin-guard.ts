@@ -36,11 +36,26 @@ export async function claimFirstAdmin(userId: string, email: string | null, name
   const sql = await getSql();
   const n = await countAdmins();
   if (n > 0) throw new ForbiddenError("An administrator already exists.");
-  await sql.query(
-    `insert into admin_users (user_id, email, display_name) values ($1,$2,$3)
-     on conflict (user_id) do update set revoked_at = null, email = excluded.email`,
-    [userId, email, name],
-  );
+  try {
+    await sql.query(
+      `insert into admin_users (user_id, email, display_name) values ($1,$2,$3)
+       on conflict (user_id) do update set revoked_at = null, email = excluded.email`,
+      [userId, email, name],
+    );
+  } catch (error) {
+    // The partial unique index in migration 0006 makes the first-admin claim
+    // atomic across concurrent requests. Convert its uniqueness failure into the
+    // same safe 403 response as the normal already-configured path.
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "23505"
+    ) {
+      throw new ForbiddenError("An administrator already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function optionalSession(bearer?: string) {
