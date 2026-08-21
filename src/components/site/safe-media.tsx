@@ -39,9 +39,7 @@ export function SafeImage({
 
   return (
     <div className={cn("relative overflow-hidden bg-navy-mid", className)}>
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-navy-lift/80" aria-hidden />
-      )}
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-navy-lift/80" aria-hidden />}
       <img
         key={url}
         src={url}
@@ -55,9 +53,7 @@ export function SafeImage({
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (src && !failed && attempt < MAX_RETRIES) {
-            window.setTimeout(() => {
-              setAttempt((value) => value + 1);
-            }, 500 * (attempt + 1));
+            window.setTimeout(() => setAttempt((value) => value + 1), 500 * (attempt + 1));
             return;
           }
           setFailed(true);
@@ -73,11 +69,14 @@ export function SafeVideo({
   poster,
   className,
   caption,
+  frameIndex = 0,
 }: {
   src: string;
   poster?: string | null;
   className?: string;
   caption?: string | null;
+  /** Selects a different stable frame for each video when no explicit poster is supplied. */
+  frameIndex?: number;
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -91,21 +90,22 @@ export function SafeVideo({
     }
 
     let cancelled = false;
+    let captured = false;
     const video = document.createElement("video");
-    video.preload = "metadata";
+    video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = "anonymous";
 
     const captureFrame = () => {
-      if (cancelled || !video.videoWidth || !video.videoHeight) return;
+      if (cancelled || captured || !video.videoWidth || !video.videoHeight) return;
+      captured = true;
 
       const canvas = document.createElement("canvas");
       const maxWidth = 640;
       const scale = Math.min(1, maxWidth / video.videoWidth);
       canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
       canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-
       const context = canvas.getContext("2d");
       if (!context) return;
 
@@ -121,21 +121,39 @@ export function SafeVideo({
       video.load();
     };
 
-    const onLoadedData = () => captureFrame();
+    const onLoadedMetadata = () => {
+      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      // Use different points in the video so adjacent videos cannot all receive
+      // the same first-frame thumbnail. Cycle through 20%, 50%, and 80%.
+      const ratios = [0.2, 0.5, 0.8];
+      const ratio = ratios[Math.abs(frameIndex) % ratios.length];
+      const target = Math.max(0, Math.min(video.duration - 0.05, video.duration * ratio));
+      try {
+        video.currentTime = target;
+      } catch {
+        // Some browsers may require loadeddata before seeking.
+      }
+    };
+
+    const onLoadedData = () => {
+      if (video.currentTime > 0.01) captureFrame();
+    };
     const onSeeked = () => captureFrame();
 
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
     video.addEventListener("loadeddata", onLoadedData);
     video.addEventListener("seeked", onSeeked);
     video.src = withRetryParam(src, 0);
 
     return () => {
       cancelled = true;
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("seeked", onSeeked);
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, poster]);
+  }, [src, poster, frameIndex]);
 
   if (!src) {
     return (
@@ -170,9 +188,7 @@ export function SafeVideo({
         className="h-full w-full bg-navy object-contain"
         onError={() => {
           if (attempt < MAX_RETRIES) {
-            window.setTimeout(() => {
-              setAttempt((value) => value + 1);
-            }, 700 * (attempt + 1));
+            window.setTimeout(() => setAttempt((value) => value + 1), 700 * (attempt + 1));
             return;
           }
           setFailed(true);
@@ -181,9 +197,7 @@ export function SafeVideo({
         <source src={url} type={type} />
         {type !== "video/mp4" ? <source src={url} type="video/mp4" /> : null}
       </video>
-      {caption ? (
-        <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p>
-      ) : null}
+      {caption ? <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p> : null}
     </div>
   );
 }
