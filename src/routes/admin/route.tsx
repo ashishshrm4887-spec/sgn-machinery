@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { RedirectToSignIn } from "@/lib/auth/gates";
+import { authClient, signOut } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { signOut } from "@/lib/auth/client";
 import { bootstrapAdmin, getAdminSession } from "@/lib/server/admin";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -27,9 +27,30 @@ const NAV = [
 function AdminGate() {
   const { user, isPending } = useCurrentUserState();
   const [state, setState] = useState<"load" | "setup" | "deny" | "ok">("load");
+  const [authRetrying, setAuthRetrying] = useState(false);
+  const [authRetryCount, setAuthRetryCount] = useState(0);
 
   useEffect(() => {
-    if (isPending) return;
+    if (isPending || user || authRetryCount >= 2) {
+      if (user) setAuthRetrying(false);
+      return;
+    }
+
+    setAuthRetrying(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        await authClient.getSession();
+      } finally {
+        setAuthRetryCount((value) => value + 1);
+        setAuthRetrying(false);
+      }
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [isPending, user, authRetryCount]);
+
+  useEffect(() => {
+    if (isPending || authRetrying) return;
     if (!user) {
       setState("load");
       return;
@@ -47,9 +68,9 @@ function AdminGate() {
         setState("deny");
       }
     })();
-  }, [user, isPending]);
+  }, [user, isPending, authRetrying]);
 
-  if (isPending || (user && state === "load")) {
+  if (isPending || authRetrying || (!user && authRetryCount < 2) || (user && state === "load")) {
     return (
       <div className="grid min-h-screen place-items-center bg-navy text-fg">
         <p className="font-display uppercase tracking-[0.16em]">Checking access…</p>
