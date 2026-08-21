@@ -48,10 +48,29 @@ export const listMachineOptionsAdmin = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.userId);
     const sql = await getSql();
-    return sql.query<{ id: string; name: string; slug: string }>(
-      `select id, name, slug
-         from machines
-        where archived = false
-        order by sort_order, name`,
+    return sql.query<{ id: string; name: string; slug: string; featuredMediaId: string | null }>(
+      `select m.id, m.name, m.slug, mm.media_id as "featuredMediaId"
+         from machines m
+         left join machine_media mm on mm.machine_id = m.id and mm.role = 'main'
+        where m.archived = false
+        order by m.sort_order, m.name`,
+    );
+  });
+
+export const listFeaturedImageMediaAdmin = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.userId);
+    const sql = await getSql();
+    return sql.query<{
+      id: string;
+      original_name: string;
+      public_url: string | null;
+      storage: string;
+    }>(
+      `select id, original_name, public_url, storage
+         from media_library
+        where kind = 'image'
+        order by created_at desc`,
     );
   });
