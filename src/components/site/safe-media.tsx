@@ -70,13 +70,15 @@ export function SafeVideo({
   className,
   caption,
   frameIndex = 0,
+  preview = false,
 }: {
   src: string;
   poster?: string | null;
   className?: string;
   caption?: string | null;
-  /** Selects a different stable frame for each video when generating a fallback poster. */
   frameIndex?: number;
+  /** Gallery preview mode: muted, autoplaying and looping without player controls. */
+  preview?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -155,6 +157,11 @@ export function SafeVideo({
     };
   }, [src, shouldGenerateFrame, frameIndex]);
 
+  useEffect(() => {
+    if (preview) return;
+    setPlaying(false);
+  }, [src, preview]);
+
   if (!src) {
     return (
       <div className={cn("relative bg-navy-mid", className)}>
@@ -181,12 +188,12 @@ export function SafeVideo({
     <div className={cn("relative bg-navy", className)}>
       <video
         key={url}
-        controls={playing}
-        muted={!playing}
+        controls={preview ? false : playing}
+        muted={preview ? true : !playing}
         autoPlay
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
         poster={effectivePoster}
         className="h-full w-full bg-navy object-contain"
         onPlay={() => setPlaying(true)}
@@ -198,6 +205,7 @@ export function SafeVideo({
           setFailed(true);
         }}
         onClick={(event) => {
+          if (preview) return;
           const video = event.currentTarget;
           if (!playing) {
             video.muted = false;
@@ -209,7 +217,7 @@ export function SafeVideo({
         <source src={url} type={type} />
         {type !== "video/mp4" ? <source src={url} type="video/mp4" /> : null}
       </video>
-      {!playing ? (
+      {!preview && !playing ? (
         <button
           type="button"
           aria-label="Play video"
@@ -228,6 +236,13 @@ export function SafeVideo({
             <span className="ml-1 text-3xl">▶</span>
           </span>
         </button>
+      ) : null}
+      {preview ? (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-lg">
+            <span className="ml-1 text-2xl">▶</span>
+          </span>
+        </div>
       ) : null}
       {caption ? <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p> : null}
     </div>
