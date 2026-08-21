@@ -4,6 +4,24 @@ import { buttonVariants } from "@/components/ui/button";
 import { SafeImage } from "./safe-media";
 import { cn } from "@/lib/utils";
 
+function fallbackImageForMachine(machine: MachineCard): string {
+  const slug = machine.slug.toLowerCase();
+  const name = machine.name.toLowerCase();
+
+  if (slug.includes("corrugat") || name.includes("corrugat")) {
+    return "/media/corrugation-machine.jpg";
+  }
+  if (slug.includes("sheet") || name.includes("sheet pasting")) {
+    return "/media/sheet-pasting-machine.jpg";
+  }
+  if (slug.includes("chain") || name.includes("printer slotter")) {
+    // Keep a real workshop image visible if the admin-selected media endpoint
+    // is temporarily unavailable on a device/network.
+    return "/media/machine-nameplate.jpg";
+  }
+  return "/media/hero-workshop.jpg";
+}
+
 export function MachineCardView({ machine }: { machine: MachineCard }) {
   return (
     <article className="group flex h-full flex-col bg-paper shadow-[var(--shadow-border)] transition-[box-shadow] duration-150 hover:shadow-[var(--shadow-lift)]">
@@ -11,6 +29,7 @@ export function MachineCardView({ machine }: { machine: MachineCard }) {
         <SafeImage
           src={machine.imageUrl}
           alt={machine.name}
+          fallback={fallbackImageForMachine(machine)}
           loading="eager"
           fetchPriority="high"
           className="aspect-[16/10] w-full"
