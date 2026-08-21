@@ -75,12 +75,13 @@ export function SafeVideo({
   poster?: string | null;
   className?: string;
   caption?: string | null;
-  /** Selects a different stable frame for each video when no explicit poster is supplied. */
+  /** Selects a different stable frame for each video when generating a fallback poster. */
   frameIndex?: number;
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
   const shouldGenerateFrame = !poster || frameIndex > 0;
   const effectivePoster = generatedPoster || poster || VIDEO_POSTER_FALLBACK;
 
@@ -180,11 +181,15 @@ export function SafeVideo({
     <div className={cn("relative bg-navy", className)}>
       <video
         key={url}
-        controls
+        controls={playing}
+        muted={!playing}
+        autoPlay
+        loop
         playsInline
         preload="metadata"
         poster={effectivePoster}
         className="h-full w-full bg-navy object-contain"
+        onPlay={() => setPlaying(true)}
         onError={() => {
           if (attempt < MAX_RETRIES) {
             window.setTimeout(() => setAttempt((value) => value + 1), 700 * (attempt + 1));
@@ -192,10 +197,38 @@ export function SafeVideo({
           }
           setFailed(true);
         }}
+        onClick={(event) => {
+          const video = event.currentTarget;
+          if (!playing) {
+            video.muted = false;
+            setPlaying(true);
+            void video.play().catch(() => undefined);
+          }
+        }}
       >
         <source src={url} type={type} />
         {type !== "video/mp4" ? <source src={url} type="video/mp4" /> : null}
       </video>
+      {!playing ? (
+        <button
+          type="button"
+          aria-label="Play video"
+          className="absolute inset-0 flex items-center justify-center bg-transparent"
+          onClick={(event) => {
+            event.stopPropagation();
+            const video = event.currentTarget.previousElementSibling as HTMLVideoElement | null;
+            if (video) {
+              video.muted = false;
+              setPlaying(true);
+              void video.play().catch(() => undefined);
+            }
+          }}
+        >
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-black/55 text-white shadow-lg transition-transform hover:scale-105">
+            <span className="ml-1 text-3xl">▶</span>
+          </span>
+        </button>
+      ) : null}
       {caption ? <p className="border-t border-line bg-paper px-3 py-2 text-sm text-steel">{caption}</p> : null}
     </div>
   );
