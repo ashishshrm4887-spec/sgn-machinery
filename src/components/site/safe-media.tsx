@@ -25,12 +25,16 @@ export function SafeImage({
   className,
   imgClassName,
   fallback = PLACEHOLDER,
+  loading = "lazy",
+  fetchPriority = "auto",
 }: {
   src: string | null | undefined;
   alt: string;
   className?: string;
   imgClassName?: string;
   fallback?: string;
+  loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -44,7 +48,9 @@ export function SafeImage({
         key={url}
         src={url}
         alt={alt}
-        loading="lazy"
+        loading={loading}
+        fetchPriority={fetchPriority}
+        decoding="async"
         className={cn(
           "h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/20 transition-opacity duration-300",
           loaded ? "opacity-100" : "opacity-0",
@@ -77,7 +83,6 @@ export function SafeVideo({
   className?: string;
   caption?: string | null;
   frameIndex?: number;
-  /** Gallery preview mode: muted, autoplaying and looping without player controls. */
   preview?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
