@@ -63,7 +63,7 @@ export function Header() {
       <div
         className={cn(
           "mx-auto flex max-w-6xl box-border items-center",
-          "h-[120px] min-h-[120px] max-h-[120px] gap-2 px-6",
+          "h-[140px] min-h-[140px] max-h-[140px] gap-1.5 px-2",
           "lg:h-auto lg:min-h-0 lg:max-h-none lg:gap-4 lg:px-4 lg:py-3",
         )}
       >
@@ -77,8 +77,8 @@ export function Header() {
             alt={company.companyName}
             className={cn(
               "block h-auto object-contain object-left",
-              "w-[min(300px,calc(100vw-9.25rem))] max-h-[100px]",
-              "max-[390px]:w-[min(250px,calc(100vw-8.5rem))]",
+              "w-[min(320px,calc(100vw-6.5rem))] max-h-[120px]",
+              "max-[390px]:w-[min(290px,calc(100vw-6.5rem))]",
               "lg:hidden",
             )}
           />
@@ -104,7 +104,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2 max-[390px]:gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 max-[390px]:gap-1 sm:gap-3">
           {phone ? (
             <a
               href={toTelLink(phone)}
@@ -122,7 +122,7 @@ export function Header() {
             to="/quote"
             search={{}}
             className={cn(
-              "inline-flex h-10 items-center justify-center border border-[#C8102E] bg-[#FFFFFF] px-3",
+              "inline-flex h-11 items-center justify-center border border-[#C8102E] bg-[#FFFFFF] px-3",
               "font-display text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#C8102E]",
               "hover:bg-[#C8102E]/5",
               "lg:h-10 lg:border-transparent lg:bg-accent lg:px-4 lg:text-[0.95rem] lg:text-fg lg:hover:bg-accent-hover",
@@ -133,7 +133,7 @@ export function Header() {
 
           <button
             type="button"
-            className="grid size-10 shrink-0 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
+            className="grid size-11 shrink-0 place-items-center border border-[#07111F] bg-[#FFFFFF] text-[#07111F] lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
