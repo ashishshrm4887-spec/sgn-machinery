@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { listPageSeoAdmin, savePageSeo, tryAdmin } from "@/lib/server/admin";
+import { listPageSeoAdmin, savePageSeo } from "@/lib/server/seo";
+import { tryAdmin } from "@/lib/server/admin";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
