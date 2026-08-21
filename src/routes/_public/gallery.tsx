@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_public/gallery")({
 
 function GalleryPage() {
   const items = Route.useLoaderData();
+  let videoIndex = 0;
+
   return (
     <>
       <header className="bg-navy py-16 text-fg">
@@ -32,21 +34,29 @@ function GalleryPage() {
       <div className="mx-auto max-w-6xl px-4 py-14">
         {items.length ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <figure key={item.id} className="bg-navy">
-                {item.kind === "video" ? (
-                  <SafeVideo src={item.url} poster={item.posterUrl} className="aspect-[4/3]" />
-                ) : (
-                  <SafeImage src={item.url} alt={item.caption || "Gallery image"} className="aspect-[4/3]" />
-                )}
-                {item.caption || item.category ? (
-                  <figcaption className="px-3 py-2 text-sm text-fg-muted">
-                    {item.category ? <span className="mr-2 text-accent">{item.category}</span> : null}
-                    {item.caption}
-                  </figcaption>
-                ) : null}
-              </figure>
-            ))}
+            {items.map((item) => {
+              const currentVideoIndex = item.kind === "video" ? videoIndex++ : 0;
+              return (
+                <figure key={item.id} className="bg-navy">
+                  {item.kind === "video" ? (
+                    <SafeVideo
+                      src={item.url}
+                      poster={item.posterUrl}
+                      frameIndex={currentVideoIndex}
+                      className="aspect-[4/3]"
+                    />
+                  ) : (
+                    <SafeImage src={item.url} alt={item.caption || "Gallery image"} className="aspect-[4/3]" />
+                  )}
+                  {item.caption || item.category ? (
+                    <figcaption className="px-3 py-2 text-sm text-fg-muted">
+                      {item.category ? <span className="mr-2 text-accent">{item.category}</span> : null}
+                      {item.caption}
+                    </figcaption>
+                  ) : null}
+                </figure>
+              );
+            })}
           </div>
         ) : (
           <p className="text-steel">Gallery images will appear here after they are uploaded and published.</p>
