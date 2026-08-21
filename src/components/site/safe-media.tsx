@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER = "/media/placeholder.svg";
+const VIDEO_POSTER_FALLBACK = "/media/hero-workshop.jpg";
 const MAX_RETRIES = 3;
 
 function withRetryParam(src: string, attempt: number): string {
@@ -80,11 +81,12 @@ export function SafeVideo({
 }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const effectivePoster = poster || VIDEO_POSTER_FALLBACK;
 
   if (!src) {
     return (
       <div className={cn("relative bg-navy-mid", className)}>
-        <SafeImage src={poster} alt={caption || "Video unavailable"} className="h-full w-full" />
+        <SafeImage src={effectivePoster} alt={caption || "Video unavailable"} className="h-full w-full" />
       </div>
     );
   }
@@ -92,7 +94,7 @@ export function SafeVideo({
   if (failed) {
     return (
       <div className={cn("relative bg-navy-mid", className)}>
-        <SafeImage src={poster} alt={caption || "Video unavailable"} className="h-full w-full" />
+        <SafeImage src={effectivePoster} alt={caption || "Video unavailable"} className="h-full w-full" />
         <div className="absolute inset-x-0 bottom-0 bg-navy/80 px-4 py-3 text-sm text-fg">
           Video could not be loaded. The still image is shown instead.
         </div>
@@ -110,7 +112,7 @@ export function SafeVideo({
         controls
         playsInline
         preload="metadata"
-        poster={poster || undefined}
+        poster={effectivePoster}
         className="h-full w-full bg-navy object-contain"
         onError={() => {
           if (attempt < MAX_RETRIES) {
