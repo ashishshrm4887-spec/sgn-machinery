@@ -49,7 +49,20 @@ export function SafeImage({
 
   return (
     <div className={cn("relative overflow-hidden bg-navy-mid", className)}>
-      {!loaded && <div className="absolute inset-0 animate-pulse bg-navy-lift/80" aria-hidden />}
+      {/* Always render the known-good fallback underneath. This prevents a
+          blank/blue card on slow or broken mobile networks while the CMS/API
+          image is loading. The real image fades over it once loaded. */}
+      <img
+        src={fallback}
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        className={cn(
+          "absolute inset-0 h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/20",
+          imgClassName,
+        )}
+      />
       <img
         key={url}
         src={url}
@@ -58,15 +71,12 @@ export function SafeImage({
         fetchPriority={fetchPriority}
         decoding="async"
         className={cn(
-          "h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/20 transition-opacity duration-300",
+          "relative h-full w-full object-cover outline outline-1 -outline-offset-1 outline-black/20 transition-opacity duration-300",
           loaded ? "opacity-100" : "opacity-0",
           imgClassName,
         )}
         onLoad={() => setLoaded(true)}
         onError={() => {
-          // For machine cards, never leave a blank blue placeholder when the
-          // database/API media URL is unavailable. Switch to the known-good
-          // local fallback immediately; retries are only useful before fallback.
           if (src && !failed && attempt < MAX_RETRIES) {
             if (attempt === 0) {
               setFailed(true);
@@ -76,7 +86,7 @@ export function SafeImage({
             return;
           }
           setFailed(true);
-          setLoaded(true);
+          setLoaded(false);
         }}
       />
     </div>
