@@ -16,7 +16,7 @@ function LoginPage() {
   const { hasAdmins } = Route.useLoaderData();
   const { user, isPending } = useCurrentUserState();
   const navigate = useNavigate();
-  const [mode] = useState<"setup" | "signin">(hasAdmins ? "signin" : "setup");
+  const mode: "setup" | "signin" = user || hasAdmins ? "signin" : "setup";
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,12 +47,21 @@ function LoginPage() {
         const { error: err } = await authClient.signIn.email({ email, password });
         if (err) throw new Error(err.message || "Sign-in failed.");
       }
-      navigate({ to: "/admin" });
+      await authClient.getSession();
+      window.location.href = "/admin";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed.");
     } finally {
       setBusy(false);
     }
+  }
+
+  if (isPending || user) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-navy px-4 text-fg">
+        <p className="font-display uppercase tracking-[0.16em]">Checking administrator session…</p>
+      </main>
+    );
   }
 
   return (
