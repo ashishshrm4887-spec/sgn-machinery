@@ -81,10 +81,11 @@ export function SafeVideo({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
-  const effectivePoster = poster || generatedPoster || VIDEO_POSTER_FALLBACK;
+  const shouldGenerateFrame = !poster || frameIndex > 0;
+  const effectivePoster = generatedPoster || poster || VIDEO_POSTER_FALLBACK;
 
   useEffect(() => {
-    if (!src || poster) {
+    if (!src || !shouldGenerateFrame) {
       setGeneratedPoster(null);
       return;
     }
@@ -114,7 +115,7 @@ export function SafeVideo({
         const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
         if (dataUrl.length > 100) setGeneratedPoster(dataUrl);
       } catch {
-        // Cross-origin or unsupported media: keep the normal fallback poster.
+        // Cross-origin or unsupported media: keep the normal poster.
       }
 
       video.removeAttribute("src");
@@ -123,8 +124,6 @@ export function SafeVideo({
 
     const onLoadedMetadata = () => {
       if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-      // Use different points in the video so adjacent videos cannot all receive
-      // the same first-frame thumbnail. Cycle through 20%, 50%, and 80%.
       const ratios = [0.2, 0.5, 0.8];
       const ratio = ratios[Math.abs(frameIndex) % ratios.length];
       const target = Math.max(0, Math.min(video.duration - 0.05, video.duration * ratio));
@@ -153,7 +152,7 @@ export function SafeVideo({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, poster, frameIndex]);
+  }, [src, shouldGenerateFrame, frameIndex]);
 
   if (!src) {
     return (
